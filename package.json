@@ -1,0 +1,100 @@
+{
+  "name": "@go-mondo/nextjs-auth",
+  "version": "0.1.0",
+  "description": "Next.js authentication helpers for Mondo Identity.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json",
+    "./app-router": {
+      "import": {
+        "types": "./dist/app-router/index.d.ts",
+        "default": "./dist/app-router/index.js"
+      },
+      "require": {
+        "types": "./dist/app-router/index.d.cts",
+        "default": "./dist/app-router/index.cjs"
+      }
+    },
+    "./handlers": {
+      "import": {
+        "types": "./dist/handlers/index.d.ts",
+        "default": "./dist/handlers/index.js"
+      },
+      "require": {
+        "types": "./dist/handlers/index.d.cts",
+        "default": "./dist/handlers/index.cjs"
+      }
+    },
+    "./*": {
+      "import": {
+        "types": "./dist/*.d.ts",
+        "default": "./dist/*.js"
+      },
+      "require": {
+        "types": "./dist/*.d.cts",
+        "default": "./dist/*.cjs"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "check": "pnpm run type-check && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run build",
+    "clean": "rimraf dist",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "prepare": "husky",
+    "commitlint": "commitlint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "cookie": "^1.0.2",
+    "iron-session": "^8.0.4",
+    "openid-client": "^6.8.1",
+    "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "next": ">=15",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.0",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@types/node": "^20.19.37",
+    "@types/react": "^19.2.14",
+    "@vitest/coverage-v8": "^3.2.3",
+    "husky": "^9.1.7",
+    "next": "^16.0.3",
+    "react": "^19.2.0",
+    "rimraf": "^6.1.2",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.3"
+  }
+}
