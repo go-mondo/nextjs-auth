@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ConfigError } from '../errors/config';
 import { getConfig } from './config';
 import schema from './schema';
@@ -11,7 +11,17 @@ const validConfig = {
   secret: '01234567890123456789012345678901',
 };
 
+const originalPublicSessionRoute = process.env.NEXT_PUBLIC_MONDO_SESSION;
+
 describe('getConfig', () => {
+  beforeEach(() => {
+    delete process.env.NEXT_PUBLIC_MONDO_SESSION;
+  });
+
+  afterEach(() => {
+    restorePublicSessionRoute();
+  });
+
   it('validates and normalizes the core configuration', () => {
     const config = getConfig({
       ...validConfig,
@@ -44,6 +54,14 @@ describe('getConfig', () => {
 
     expect(config.session.idleDuration).toBe(false);
     expect(config.session.absoluteDuration).toBe(3600);
+  });
+
+  it('uses the public session route when no server-only session route is set', () => {
+    process.env.NEXT_PUBLIC_MONDO_SESSION = '/api/session';
+
+    const config = getConfig(validConfig);
+
+    expect(config.routes.session).toBe('/api/session');
   });
 
   it('requires at least one session expiration mode', () => {
@@ -102,3 +120,12 @@ describe('getConfig', () => {
     );
   });
 });
+
+function restorePublicSessionRoute() {
+  if (originalPublicSessionRoute === undefined) {
+    delete process.env.NEXT_PUBLIC_MONDO_SESSION;
+    return;
+  }
+
+  process.env.NEXT_PUBLIC_MONDO_SESSION = originalPublicSessionRoute;
+}

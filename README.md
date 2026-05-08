@@ -18,7 +18,8 @@ This package uses explicit subpath exports for supporting types. Import the
 auth client from `@go-mondo/nextjs-auth` or `@go-mondo/nextjs-auth/client`, and
 import supporting public types from `@go-mondo/nextjs-auth/config`,
 `@go-mondo/nextjs-auth/session`, `@go-mondo/nextjs-auth/oidc`, or
-`@go-mondo/nextjs-auth/errors`.
+`@go-mondo/nextjs-auth/errors`. Hooks are exported from
+`@go-mondo/nextjs-auth/hooks`.
 
 ## Environment
 
@@ -39,6 +40,7 @@ MONDO_AUDIENCE="https://api.example.com"
 MONDO_SCOPE="openid profile email offline_access"
 
 NEXT_PUBLIC_MONDO_LOGIN="/auth/login"
+NEXT_PUBLIC_MONDO_SESSION="/auth/session"
 MONDO_CALLBACK="/auth/callback"
 MONDO_LOGOUT="/auth/logout"
 MONDO_SESSION="/auth/session"
@@ -146,6 +148,57 @@ The default session JSON endpoint is mounted at `/auth/session`.
 ```ts
 const response = await fetch('/auth/session');
 ```
+
+## Reading the User in Client Components
+
+Client components can read the current user with the TanStack Query hook from
+the focused user hook entry point. Your app must provide a
+`QueryClientProvider`.
+
+```sh
+pnpm add @tanstack/react-query
+```
+
+```tsx
+// src/app/providers.tsx
+'use client';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { type ReactNode, useState } from 'react';
+
+export function Providers({ children }: { children: ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient());
+
+  return (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+}
+```
+
+```tsx
+'use client';
+
+import { useUserProfile } from '@go-mondo/nextjs-auth/hooks';
+
+type MondoClaims = {
+  roles?: string[];
+  org_id?: string;
+};
+
+export function ProfileButton() {
+  const { data: user, isLoading } = useUserProfile<MondoClaims>();
+
+  if (isLoading) {
+    return null;
+  }
+
+  return <span>{user?.email ?? 'Signed out'}</span>;
+}
+```
+
+The hook calls `/auth/session` by default and returns `undefined` for 401/403
+responses. It can read either the default session JSON shape or a transformed
+route that returns `session.user` directly.
 
 ## Getting an Access Token
 

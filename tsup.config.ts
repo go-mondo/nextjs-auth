@@ -5,6 +5,7 @@ export default defineConfig({
     'src/client.ts',
     'src/config.ts',
     'src/errors.ts',
+    'src/hooks.ts',
     'src/oidc.ts',
     'src/session.ts',
   ],
@@ -16,6 +17,7 @@ export default defineConfig({
   treeshake: true,
   target: 'es2022',
   outDir: 'dist',
+  onSuccess: 'node scripts/prepend-use-client.mjs',
   outExtension({ format }) {
     return {
       js: format === 'cjs' ? '.cjs' : '.js',
@@ -28,6 +30,8 @@ export default defineConfig({
     'next/headers.js',
     'next/server.js',
     'openid-client',
+    '@tanstack/react-query',
+    'react',
     'zod',
   ],
 });

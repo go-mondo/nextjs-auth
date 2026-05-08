@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { Providers } from './providers';
 
 export const metadata: Metadata = {
   title: 'Mondo Auth Client Example',
@@ -16,7 +17,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           margin: 0,
         }}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

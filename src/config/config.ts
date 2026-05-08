@@ -1,4 +1,5 @@
 import { ConfigError } from '../errors/config';
+import { DEFAULT_ROUTES } from './routes';
 import schema from './schema';
 import type {
   Config,
@@ -24,6 +25,7 @@ import { bool, num } from './utils';
  * ### Optional
  *
  * - `NEXT_PUBLIC_MONDO_LOGIN`: See {@link Config.routes}.
+ * - `NEXT_PUBLIC_MONDO_SESSION`: See {@link Config.routes}.
  * - `MONDO_CALLBACK`: See {@link Config.routes}.
  * - `MONDO_POST_LOGOUT_REDIRECT`: See {@link Config.routes}.
  * - `MONDO_AUDIENCE`: See {@link Config.authorizationParams}.
@@ -59,6 +61,7 @@ export const getConfig = (params: PartialConfig = {}): Config => {
   const MONDO_CALLBACK = process.env.MONDO_CALLBACK;
   const MONDO_LOGOUT = process.env.MONDO_LOGOUT;
   const MONDO_SESSION = process.env.MONDO_SESSION;
+  const NEXT_PUBLIC_MONDO_SESSION = process.env.NEXT_PUBLIC_MONDO_SESSION;
   const MONDO_ACCESS_TOKEN = process.env.MONDO_ACCESS_TOKEN;
   const MONDO_POST_LOGOUT_REDIRECT = process.env.MONDO_POST_LOGOUT_REDIRECT;
 
@@ -117,19 +120,26 @@ export const getConfig = (params: PartialConfig = {}): Config => {
       },
     },
     routes: {
-      callback: params.routes?.callback || MONDO_CALLBACK || '/auth/callback',
+      callback:
+        params.routes?.callback || MONDO_CALLBACK || DEFAULT_ROUTES.callback,
       login:
         params.routes?.login ||
         process.env.NEXT_PUBLIC_MONDO_LOGIN ||
-        '/auth/login',
-      logout: params.routes?.logout || MONDO_LOGOUT || '/auth/logout',
-      session: params.routes?.session || MONDO_SESSION || '/auth/session',
+        DEFAULT_ROUTES.login,
+      logout: params.routes?.logout || MONDO_LOGOUT || DEFAULT_ROUTES.logout,
+      session:
+        params.routes?.session ||
+        MONDO_SESSION ||
+        NEXT_PUBLIC_MONDO_SESSION ||
+        DEFAULT_ROUTES.session,
       accessToken:
         params.routes?.accessToken ||
         MONDO_ACCESS_TOKEN ||
-        '/auth/access-token',
+        DEFAULT_ROUTES.accessToken,
       postLogoutRedirect:
-        params.routes?.postLogoutRedirect || MONDO_POST_LOGOUT_REDIRECT,
+        params.routes?.postLogoutRedirect ||
+        MONDO_POST_LOGOUT_REDIRECT ||
+        DEFAULT_ROUTES.postLogoutRedirect,
     },
     transaction: {
       name: MONDO_TRANSACTION_NAME,

@@ -63,6 +63,16 @@
         "default": "./dist/oidc.cjs"
       }
     },
+    "./hooks": {
+      "import": {
+        "types": "./dist/hooks.d.ts",
+        "default": "./dist/hooks.js"
+      },
+      "require": {
+        "types": "./dist/hooks.d.cts",
+        "default": "./dist/hooks.cjs"
+      }
+    },
     "./session": {
       "import": {
         "types": "./dist/session.d.ts",
@@ -77,7 +87,7 @@
   },
   "scripts": {
     "build": "tsup",
-    "check": "pnpm run type-check && pnpm run type-check:examples && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run build",
+    "check": "pnpm run type-check && pnpm run build && pnpm run type-check:examples && pnpm run lint && pnpm run format:check && pnpm run test",
     "clean": "rimraf dist",
     "dev:example:client": "pnpm --filter @go-mondo/nextjs-auth-example-client-profile dev",
     "dev:example:server": "pnpm --filter @go-mondo/nextjs-auth-example-server-profile dev",
@@ -101,12 +111,15 @@
     "zod": "4.4.3"
   },
   "peerDependencies": {
+    "@tanstack/react-query": ">=5",
+    "react": ">=18",
     "next": ">=15"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
+    "@tanstack/react-query": "^5.95.2",
     "@types/node": "^20.19.37",
     "@vitest/coverage-v8": "^3.2.3",
     "husky": "^9.1.7",

@@ -17,6 +17,9 @@ importers:
       openid-client:
         specifier: ^6.8.1
         version: 6.8.4
+      react:
+        specifier: '>=18'
+        version: 19.2.6
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -30,6 +33,9 @@ importers:
       '@commitlint/config-conventional':
         specifier: ^19.8.1
         version: 19.8.1
+      '@tanstack/react-query':
+        specifier: ^5.95.2
+        version: 5.95.2(react@19.2.6)
       '@types/node':
         specifier: ^20.19.37
         version: 20.19.39
@@ -60,6 +66,9 @@ importers:
       '@go-mondo/nextjs-auth':
         specifier: workspace:*
         version: link:../..
+      '@tanstack/react-query':
+        specifier: ^5.95.2
+        version: 5.95.2(react@19.2.6)
       next:
         specifier: ^16.0.3
         version: 16.2.6(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -794,6 +803,14 @@ packages:
 
   '@swc/helpers@0.5.15':
     resolution: {integrity: sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g==}
+
+  '@tanstack/query-core@5.95.2':
+    resolution: {integrity: sha512-o4T8vZHZET4Bib3jZ/tCW9/7080urD4c+0/AUaYVpIqOsr7y0reBc1oX3ttNaSW5mYyvZHctiQ/UOP2PfdmFEQ==}
+
+  '@tanstack/react-query@5.95.2':
+    resolution: {integrity: sha512-/wGkvLj/st5Ud1Q76KF1uFxScV7WeqN1slQx5280ycwAyYkIPGaRZAEgHxe3bjirSd5Zpwkj6zNcR4cqYni/ZA==}
+    peerDependencies:
+      react: ^18 || ^19
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
@@ -2253,6 +2270,13 @@ snapshots:
   '@swc/helpers@0.5.15':
     dependencies:
       tslib: 2.8.1
+
+  '@tanstack/query-core@5.95.2': {}
+
+  '@tanstack/react-query@5.95.2(react@19.2.6)':
+    dependencies:
+      '@tanstack/query-core': 5.95.2
+      react: 19.2.6
 
   '@types/chai@5.2.3':
     dependencies:
