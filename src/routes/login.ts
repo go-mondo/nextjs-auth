@@ -107,10 +107,24 @@ async function handler(
 
   const authorizationUrl = oidc.buildAuthorizationUrl(
     clientConfig,
-    parameters as unknown as Record<string, string>,
+    toAuthorizationUrlParameters(parameters),
   );
 
   return NextResponse.redirect(authorizationUrl);
+}
+
+function toAuthorizationUrlParameters(
+  parameters: AuthorizationCodeParams,
+): Record<string, string> {
+  const authorizationUrlParameters: Record<string, string> = {};
+
+  for (const [key, value] of Object.entries(parameters)) {
+    if (value !== undefined) {
+      authorizationUrlParameters[key] = String(value);
+    }
+  }
+
+  return authorizationUrlParameters;
 }
 
 /**

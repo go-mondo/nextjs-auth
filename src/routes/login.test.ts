@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTestConfig } from '../test-utils';
 
 const mocks = vi.hoisted(() => ({
@@ -33,9 +33,11 @@ vi.mock('openid-client', () => ({
 }));
 
 const { loginHandlerFactory } = await import('./login');
+const originalAudience = process.env.MONDO_AUDIENCE;
 
 describe('loginHandlerFactory', () => {
   beforeEach(() => {
+    delete process.env.MONDO_AUDIENCE;
     vi.clearAllMocks();
     mocks.cookieFactory.mockResolvedValue({ get: vi.fn(), set: vi.fn() });
     mocks.discoverOIDC.mockResolvedValue({ issuer: 'https://id.example.com' });
@@ -46,6 +48,14 @@ describe('loginHandlerFactory', () => {
     mocks.buildAuthorizationUrl.mockReturnValue(
       new URL('https://id.example.com/authorize?state=state'),
     );
+  });
+
+  afterEach(() => {
+    if (originalAudience === undefined) {
+      delete process.env.MONDO_AUDIENCE;
+    } else {
+      process.env.MONDO_AUDIENCE = originalAudience;
+    }
   });
 
   it('stores transaction state and redirects to the identity provider', async () => {
@@ -83,6 +93,21 @@ describe('loginHandlerFactory', () => {
     expect(response.headers.get('location')).toBe(
       'https://id.example.com/authorize?state=state',
     );
+  });
+
+  it('omits unset audience from the authorization URL parameters', async () => {
+    const transactionStore = { save: vi.fn() };
+    mocks.transactionStoreFactory.mockReturnValue(transactionStore);
+
+    await handler()(new Request('https://preview.example.com/auth/login'));
+
+    expect(mocks.buildAuthorizationUrl).toHaveBeenCalled();
+    const buildAuthorizationUrlCall = mocks.buildAuthorizationUrl.mock.calls[0];
+    if (!buildAuthorizationUrlCall) {
+      throw new Error('Expected buildAuthorizationUrl to be called.');
+    }
+
+    expect(buildAuthorizationUrlCall[1]).not.toHaveProperty('audience');
   });
 
   it('uses safe returnTo query values', async () => {
