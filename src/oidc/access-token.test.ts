@@ -51,9 +51,9 @@ describe('getAccessTokenFactory', () => {
       createSession({
         authorization: {
           accessToken: 'current-token',
-          accessTokenExpiresAt: epoch() + 3600,
-          accessTokenScope: 'openid email profile',
-          accessTokenType: 'Bearer',
+          expiresAt: epoch() + 3600,
+          scope: 'openid email profile',
+          type: 'Bearer',
           refreshToken: 'refresh-token',
         },
       }),
@@ -63,8 +63,8 @@ describe('getAccessTokenFactory', () => {
       getToken({ scopes: ['email', 'profile'] }),
     ).resolves.toMatchObject({
       accessToken: 'current-token',
-      accessTokenScope: 'openid email profile',
-      accessTokenType: 'Bearer',
+      scope: 'openid email profile',
+      type: 'Bearer',
     });
     expect(mocks.refreshTokenGrant).not.toHaveBeenCalled();
     expect(store.set).not.toHaveBeenCalled();
@@ -75,7 +75,7 @@ describe('getAccessTokenFactory', () => {
       createSession({
         authorization: {
           accessToken: 'expired-token',
-          accessTokenExpiresAt: epoch() - 1,
+          expiresAt: epoch() - 1,
         },
       }),
     );
@@ -90,8 +90,8 @@ describe('getAccessTokenFactory', () => {
       createSession({
         authorization: {
           accessToken: 'limited-token',
-          accessTokenExpiresAt: epoch() + 3600,
-          accessTokenScope: 'openid',
+          expiresAt: epoch() + 3600,
+          scope: 'openid',
         },
       }),
     );
@@ -105,9 +105,9 @@ describe('getAccessTokenFactory', () => {
     const session = createSession({
       authorization: {
         accessToken: 'expired-token',
-        accessTokenExpiresAt: epoch() - 1,
-        accessTokenScope: 'openid',
-        accessTokenType: 'Bearer',
+        expiresAt: epoch() - 1,
+        scope: 'openid',
+        type: 'Bearer',
         refreshToken: 'refresh-token',
       },
     });
@@ -122,9 +122,9 @@ describe('getAccessTokenFactory', () => {
 
     await expect(getToken({ scopes: ['openid', 'email'] })).resolves.toEqual({
       accessToken: 'new-token',
-      accessTokenExpiresAt: expect.any(Number),
-      accessTokenScope: 'openid email',
-      accessTokenType: 'Bearer',
+      expiresAt: expect.any(Number),
+      scope: 'openid email',
+      type: 'Bearer',
     });
 
     expect(mocks.refreshTokenGrant).toHaveBeenCalledWith(
@@ -139,7 +139,7 @@ describe('getAccessTokenFactory', () => {
     expect(session.authorization).toMatchObject({
       accessToken: 'new-token',
       refreshToken: 'new-refresh-token',
-      accessTokenScope: 'openid email',
+      scope: 'openid email',
     });
   });
 
@@ -148,7 +148,7 @@ describe('getAccessTokenFactory', () => {
       createSession({
         authorization: {
           accessToken: 'expired-token',
-          accessTokenExpiresAt: epoch() - 1,
+          expiresAt: epoch() - 1,
           refreshToken: 'refresh-token',
         },
       }),
@@ -190,9 +190,9 @@ function createSession(
     expiresAt: now + 3600,
     authorization: {
       accessToken: 'access-token',
-      accessTokenExpiresAt: now + 3600,
-      accessTokenScope: 'openid email',
-      accessTokenType: 'Bearer',
+      expiresAt: now + 3600,
+      scope: 'openid email',
+      type: 'Bearer',
       refreshToken: 'refresh-token',
     },
     ...overrides,

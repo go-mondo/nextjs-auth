@@ -92,11 +92,10 @@ export function fromTokenEndpointResponse<UserClaims extends Claims = Claims>(
   const authorization = access_token
     ? {
         accessToken: access_token,
-        accessTokenScope: scope,
-        accessTokenExpiresAt:
-          Math.floor(Date.now() / 1000) + Number(expires_in),
+        scope,
+        expiresAt: Math.floor(Date.now() / 1000) + Number(expires_in),
         refreshToken: refresh_token,
-        accessTokenType: token_type,
+        type: token_type,
       }
     : undefined;
 

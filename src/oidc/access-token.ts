@@ -11,13 +11,13 @@ export type AccessTokenResult = {
   accessToken: string;
 
   /** Epoch seconds when the access token expires. */
-  accessTokenExpiresAt: number;
+  expiresAt: number;
 
   /** Space-delimited scopes granted to the access token. */
-  accessTokenScope?: string;
+  scope?: string;
 
   /** Token type returned by the identity provider, usually `Bearer`. */
-  accessTokenType?: string;
+  type?: string;
 };
 
 export type GetAccessTokenOptions = {
@@ -122,17 +122,13 @@ async function refreshAccessToken<UserClaims extends Claims>(
 
     const refreshedAuthorization: SessionAuthorization = {
       accessToken: tokens.access_token,
-      accessTokenExpiresAt:
+      expiresAt:
         epoch() +
-        Number(
-          tokens.expires_in ?? authorization.accessTokenExpiresAt - epoch(),
-        ),
-      accessTokenScope:
-        tokens.scope ??
-        normalizeScopes(options.scopes) ??
-        authorization.accessTokenScope,
+        Number(tokens.expires_in ?? authorization.expiresAt - epoch()),
+      scope:
+        tokens.scope ?? normalizeScopes(options.scopes) ?? authorization.scope,
       refreshToken: tokens.refresh_token ?? authorization.refreshToken,
-      accessTokenType: tokens.token_type ?? authorization.accessTokenType,
+      type: tokens.token_type ?? authorization.type,
     };
 
     session.authorization = refreshedAuthorization;
@@ -159,7 +155,7 @@ function canUseAccessToken(
   return (
     options.refresh !== true &&
     !isExpired(authorization, options) &&
-    hasScopes(authorization.accessTokenScope, options.scopes)
+    hasScopes(authorization.scope, options.scopes)
   );
 }
 
@@ -168,7 +164,7 @@ function isExpired(
   options: GetAccessTokenOptions,
 ): boolean {
   const skew = options.refreshBeforeExpiresIn ?? 60;
-  return authorization.accessTokenExpiresAt <= epoch() + skew;
+  return authorization.expiresAt <= epoch() + skew;
 }
 
 function hasScopes(
@@ -210,8 +206,8 @@ function toAccessTokenResult(
 ): AccessTokenResult {
   return {
     accessToken: authorization.accessToken,
-    accessTokenExpiresAt: authorization.accessTokenExpiresAt,
-    accessTokenScope: authorization.accessTokenScope,
-    accessTokenType: authorization.accessTokenType,
+    expiresAt: authorization.expiresAt,
+    scope: authorization.scope,
+    type: authorization.type,
   };
 }

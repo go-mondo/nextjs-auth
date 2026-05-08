@@ -40,7 +40,7 @@ describe('NewStatelessSessionStore', () => {
       .mockResolvedValueOnce({
         data: {
           accessToken: 'access-token',
-          accessTokenExpiresAt: now + 600,
+          expiresAt: now + 600,
         },
       })
       .mockResolvedValueOnce({ data: { idToken: 'id-token' } });
@@ -159,7 +159,7 @@ function createSession() {
     expiresAt: now + 3600,
     authorization: {
       accessToken: 'access-token',
-      accessTokenExpiresAt: now + 600,
+      expiresAt: now + 600,
       refreshToken: 'refresh-token',
     },
     authentication: { idToken: 'id-token' },

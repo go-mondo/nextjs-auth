@@ -30,10 +30,10 @@ describe('fromTokenEndpointResponse', () => {
     expect(session.authorization).toMatchObject({
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
-      accessTokenScope: 'openid profile email',
-      accessTokenType: 'Bearer',
+      scope: 'openid profile email',
+      type: 'Bearer',
     });
-    expect(session.authorization?.accessTokenExpiresAt).toBeGreaterThanOrEqual(
+    expect(session.authorization?.expiresAt).toBeGreaterThanOrEqual(
       Math.floor(Date.now() / 1000) + 119,
     );
     expect(session).toHaveProperty('vendor_extra', 'extra');

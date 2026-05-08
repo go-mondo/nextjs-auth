@@ -92,19 +92,19 @@ export interface SessionAuthentication {
 
 export interface SessionAuthorization {
   /**
-   * An access token used
+   * Bearer token value used for authorized resource requests.
    */
   accessToken: string;
 
   /**
-   * A space ` ` delimited string of scopes granted to the access token
+   * Space-delimited scopes granted to the access token.
    */
-  accessTokenScope?: string | undefined;
+  scope?: string | undefined;
 
   /**
-   * A timestamp when the access token will expire
+   * Epoch seconds when the access token expires.
    */
-  accessTokenExpiresAt: number;
+  expiresAt: number;
 
   /**
    * A refresh token, used to obtain a new access token.
@@ -114,9 +114,9 @@ export interface SessionAuthorization {
   refreshToken?: string | undefined;
 
   /**
-   * The type of access token ('bearer')
+   * Token type returned by the identity provider, usually `Bearer`.
    */
-  accessTokenType?: string | undefined;
+  type?: string | undefined;
 }
 
 export type SessionPart<UserClaims extends Claims = Claims> =

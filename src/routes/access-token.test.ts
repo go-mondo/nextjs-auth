@@ -19,27 +19,27 @@ describe('accessTokenHandlerFactory', () => {
   it('returns token JSON', async () => {
     mocks.getAccessToken.mockResolvedValue({
       accessToken: 'access-token',
-      accessTokenExpiresAt: 123,
-      accessTokenScope: 'openid',
+      expiresAt: 123,
+      scope: 'openid',
     });
 
     const response = await handler()(new Request('https://app.example.com'));
 
     await expect(response.json()).resolves.toEqual({
       accessToken: 'access-token',
-      accessTokenExpiresAt: 123,
-      accessTokenScope: 'openid',
+      expiresAt: 123,
+      scope: 'openid',
     });
   });
 
   it('supports response transforms', async () => {
     mocks.getAccessToken.mockResolvedValue({
       accessToken: 'access-token',
-      accessTokenExpiresAt: 123,
+      expiresAt: 123,
     });
 
     const response = await handler({
-      transform: (token) => ({ expiresAt: token.accessTokenExpiresAt }),
+      transform: (token) => ({ expiresAt: token.expiresAt }),
     })(new Request('https://app.example.com'));
 
     await expect(response.json()).resolves.toEqual({ expiresAt: 123 });
