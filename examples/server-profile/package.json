@@ -1,0 +1,23 @@
+{
+  "name": "@go-mondo/nextjs-auth-example-server-profile",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@go-mondo/nextjs-auth": "workspace:*",
+    "next": "^16.0.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.37",
+    "@types/react": "^19.2.14",
+    "typescript": "^5.9.3"
+  }
+}

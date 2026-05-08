@@ -1,9 +1,9 @@
 import type { SerializeOptions } from 'cookie';
 import { getIronSession, type IronSession } from 'iron-session';
 import type { Config } from '../../config/types';
-import { type CookieStore, cookieFactory } from '../../cookie';
-import { getSecrets, type Secrets } from '../../secrets';
-import Session from '../model';
+import { getSecrets, type Secrets } from '../../crypto/secrets';
+import { type CookieStore, cookieFactory } from '../../http/cookies';
+import { Session } from '../model';
 import type {
   AnyRequest,
   AnyResponse,
@@ -23,9 +23,12 @@ type IronSessionPayload<Payload> = {
 };
 
 /**
- * @param config
- * @param cookieStore
- * @returns
+ * Creates the default stateless session store.
+ *
+ * @param config - Validated auth configuration.
+ * @param request - Optional request used to read cookies outside
+ * `next/headers`.
+ * @param response - Optional response used to write `Set-Cookie` headers.
  */
 export function sessionStoreFactory<UserClaims extends Claims>(
   config: Config,
@@ -35,6 +38,9 @@ export function sessionStoreFactory<UserClaims extends Claims>(
   return new NewStatelessSessionStore(config, request, response);
 }
 
+/**
+ * Stateless session store backed by three sealed `iron-session` cookies.
+ */
 export class NewStatelessSessionStore<
   UserClaims extends Claims,
 > extends AbstractSessionStore<UserClaims> {
@@ -65,7 +71,6 @@ export class NewStatelessSessionStore<
   async _get(): Promise<Session<UserClaims> | undefined> {
     const [session, authorization, authentication] = await this.getAllCookies();
 
-    // If we don't have a primary session, don't return the others
     if (!session.data) {
       return undefined;
     }
@@ -80,7 +85,6 @@ export class NewStatelessSessionStore<
   async _set(payload: Session<UserClaims>): Promise<void> {
     const [session, authorization, authentication] = await this.getAllCookies();
 
-    // Deconstruct the payload for each token cookie
     const {
       user,
       issuedAt,
@@ -90,13 +94,8 @@ export class NewStatelessSessionStore<
       authentication: authn,
     } = payload;
 
-    // Session
     session.data = { user, issuedAt, updatedAt, expiresAt };
-
-    // Authentication
     authentication.data = authn;
-
-    // Authorization
     authorization.data = authz;
 
     await Promise.all([

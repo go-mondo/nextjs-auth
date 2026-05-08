@@ -15,16 +15,8 @@ type AuthErrorOptions = {
 /**
  * The base class for all SDK errors.
  *
- * Because part of the error message can come from the OpenID Connect `error` query parameter we
- * do some basic escaping which makes sure the default error handler is safe from XSS.
- *
- * **IMPORTANT** If you write your own error handler, you should **not** render the error
- * without using a templating engine that will properly escape it for other HTML contexts first.
- *
- * Note that the error message of the {@link AuthError.cause | underlying error} is **not** escaped
- * in any way, so do **not** render it without escaping it first!
- *
- * @category Server
+ * Subclasses expose stable machine-readable codes for application-level error
+ * handling.
  */
 export abstract class AuthError extends Error {
   /**
@@ -56,6 +48,9 @@ export abstract class AuthError extends Error {
    */
   public readonly status?: number;
 
+  /**
+   * @param options - Error metadata used by SDK-specific subclasses.
+   */
   constructor(options: AuthErrorOptions) {
     /* c8 ignore next */
     super(appendCause(options.message, options.cause));

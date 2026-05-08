@@ -4,6 +4,7 @@
   "description": "Next.js authentication helpers for Mondo Identity.",
   "license": "MIT",
   "type": "module",
+  "sideEffects": false,
   "packageManager": "pnpm@10.32.1",
   "engines": {
     "node": ">=20"
@@ -26,41 +27,23 @@
       }
     },
     "./package.json": "./package.json",
-    "./app-router": {
+    "./client": {
       "import": {
-        "types": "./dist/app-router/index.d.ts",
-        "default": "./dist/app-router/index.js"
+        "types": "./dist/client.d.ts",
+        "default": "./dist/client.js"
       },
       "require": {
-        "types": "./dist/app-router/index.d.cts",
-        "default": "./dist/app-router/index.cjs"
-      }
-    },
-    "./handlers": {
-      "import": {
-        "types": "./dist/handlers/index.d.ts",
-        "default": "./dist/handlers/index.js"
-      },
-      "require": {
-        "types": "./dist/handlers/index.d.cts",
-        "default": "./dist/handlers/index.cjs"
-      }
-    },
-    "./*": {
-      "import": {
-        "types": "./dist/*.d.ts",
-        "default": "./dist/*.js"
-      },
-      "require": {
-        "types": "./dist/*.d.cts",
-        "default": "./dist/*.cjs"
+        "types": "./dist/client.d.cts",
+        "default": "./dist/client.cjs"
       }
     }
   },
   "scripts": {
     "build": "tsup",
-    "check": "pnpm run type-check && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run build",
+    "check": "pnpm run type-check && pnpm run type-check:examples && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run build",
     "clean": "rimraf dist",
+    "dev:example:client": "pnpm --filter @go-mondo/nextjs-auth-example-client-profile dev",
+    "dev:example:server": "pnpm --filter @go-mondo/nextjs-auth-example-server-profile dev",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",
@@ -68,30 +51,29 @@
     "prepare": "husky",
     "commitlint": "commitlint",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
+    "type-check:examples": "pnpm --filter @go-mondo/nextjs-auth-example-server-profile type-check && pnpm --filter @go-mondo/nextjs-auth-example-client-profile type-check",
     "prepack": "pnpm run build"
   },
   "dependencies": {
     "cookie": "^1.0.2",
     "iron-session": "^8.0.4",
     "openid-client": "^6.8.1",
-    "zod": "^4.3.6"
+    "zod": "4.4.3"
   },
   "peerDependencies": {
-    "next": ">=15",
-    "react": ">=18"
+    "next": ">=15"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@types/node": "^20.19.37",
-    "@types/react": "^19.2.14",
     "@vitest/coverage-v8": "^3.2.3",
     "husky": "^9.1.7",
     "next": "^16.0.3",
-    "react": "^19.2.0",
     "rimraf": "^6.1.2",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",

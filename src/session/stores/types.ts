@@ -1,4 +1,4 @@
-import type Session from '../model';
+import type { Session } from '../model';
 import type { Claims } from '../types';
 
 export interface SessionStoreInterface<UserClaims extends Claims> {

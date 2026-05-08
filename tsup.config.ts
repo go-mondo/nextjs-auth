@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/**/*.ts', '!src/**/*.test.ts'],
+  entry: ['src/index.ts', 'src/client.ts'],
   format: ['esm', 'cjs'],
   dts: true,
   sourcemap: true,
@@ -20,9 +20,7 @@ export default defineConfig({
     'iron-session',
     'next',
     'next/headers.js',
-    'next/navigation.js',
     'next/server.js',
-    'node:http',
     'openid-client',
     'zod',
   ],

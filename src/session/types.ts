@@ -1,17 +1,5 @@
-import type { IncomingMessage, ServerResponse } from 'node:http';
-import type { NextApiRequest, NextApiResponse } from 'next';
-import type { NextRequest, NextResponse } from 'next/server.js';
-
-export type AnyRequest =
-  | IncomingMessage
-  | NextApiRequest
-  | NextRequest
-  | Request;
-export type AnyResponse =
-  | ServerResponse
-  | NextApiResponse
-  | NextResponse
-  | Response;
+export type AnyRequest = Request;
+export type AnyResponse = Response;
 
 /**
  * Key-value store for the user's claims.

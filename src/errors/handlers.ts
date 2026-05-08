@@ -1,7 +1,7 @@
 import { AuthError } from './auth';
 
 /**
- * @ignore
+ * Error shape used by lower-level HTTP libraries.
  */
 interface HttpError extends Error {
   status: number;
@@ -9,7 +9,7 @@ interface HttpError extends Error {
 }
 
 /**
- * @ignore
+ * Supported causes for route-handler errors.
  */
 export type HandlerErrorCause = Error | AuthError | HttpError;
 
@@ -21,24 +21,7 @@ type HandlerErrorOptions = {
 };
 
 /**
- * The base class for errors thrown by API route handlers. It extends {@link AuthError}.
- *
- * Because part of the error message can come from the OpenID Connect `error` query parameter we
- * do some basic escaping which makes sure the default error handler is safe from XSS.
- *
- * **IMPORTANT** If you write your own error handler, you should **not** render the error message
- * without using a templating engine that will properly escape it for other HTML contexts first.
- *
- * @see the {@link AuthError.cause | cause property} contains the underlying error.
- * **IMPORTANT** When this error is from the Identity Provider ({@link IdentityProviderError}) it can contain user
- * input and is only escaped using basic escaping for putting untrusted data directly into the HTML body.
- * You should **not** render this error without using a templating engine that will properly escape it for other
- * HTML contexts first.
- *
- * @see the {@link AuthError.status | status property} contains the HTTP status code of the error,
- * if any.
- *
- * @category Server
+ * Base class for errors thrown by route handlers.
  */
 class HandlerError extends AuthError {
   constructor(options: HandlerErrorOptions) {
@@ -50,24 +33,7 @@ class HandlerError extends AuthError {
 }
 
 /**
- * The error thrown by the callback API route handler. It extends {@link HandlerError}.
- *
- * Because part of the error message can come from the OpenID Connect `error` query parameter we
- * do some basic escaping which makes sure the default error handler is safe from XSS.
- *
- * **IMPORTANT** If you write your own error handler, you should **not** render the error message
- * without using a templating engine that will properly escape it for other HTML contexts first.
- *
- * @see the {@link AuthError.cause | cause property} contains the underlying error.
- * **IMPORTANT** When this error is from the Identity Provider ({@link IdentityProviderError}) it can contain user
- * input and is only escaped using basic escaping for putting untrusted data directly into the HTML body.
- * You should **not** render this error without using a templating engine that will properly escape it for other
- * HTML contexts first.
- *
- * @see the {@link AuthError.status | status property} contains the HTTP status code of the error,
- * if any.
- *
- * @category Server
+ * Error thrown when callback handling fails.
  */
 export class CallbackHandlerError extends HandlerError {
   public static readonly code: string = 'ERR_CALLBACK_HANDLER_FAILURE';
@@ -84,10 +50,7 @@ export class CallbackHandlerError extends HandlerError {
 }
 
 /**
- * The error thrown by the login API route handler. It extends {@link HandlerError}.
- *
- * @see the {@link AuthError.cause | cause property} contains the underlying error.
- * @category Server
+ * Error thrown when login handling fails.
  */
 export class LoginHandlerError extends HandlerError {
   public static readonly code: string = 'ERR_LOGIN_HANDLER_FAILURE';
@@ -104,10 +67,7 @@ export class LoginHandlerError extends HandlerError {
 }
 
 /**
- * The error thrown by the logout API route handler. It extends {@link HandlerError}.
- *
- * @see the {@link AuthError.cause | cause property} contains the underlying error.
- * @category Server
+ * Error thrown when logout handling fails.
  */
 export class LogoutHandlerError extends HandlerError {
   public static readonly code: string = 'ERR_LOGOUT_HANDLER_FAILURE';
@@ -120,25 +80,5 @@ export class LogoutHandlerError extends HandlerError {
       cause,
     }); /* c8 ignore next */
     Object.setPrototypeOf(this, LogoutHandlerError.prototype);
-  }
-}
-
-/**
- * The error thrown by the profile API route handler. It extends {@link HandlerError}.
- *
- * @see the {@link AuthError.cause | cause property} contains the underlying error.
- * @category Server
- */
-export class ProfileHandlerError extends HandlerError {
-  public static readonly code: string = 'ERR_PROFILE_HANDLER_FAILURE';
-
-  constructor(cause: HandlerErrorCause) {
-    super({
-      code: ProfileHandlerError.code,
-      message: 'Profile handler failed.',
-      name: 'ProfileHandlerError',
-      cause,
-    }); /* c8 ignore next */
-    Object.setPrototypeOf(this, ProfileHandlerError.prototype);
   }
 }

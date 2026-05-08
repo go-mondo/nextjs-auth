@@ -1,10 +1,16 @@
 import type { Config } from '../../config/types';
-import { assertBoolean } from '../../utils/assert';
-import type Session from '../model';
+import { assertBoolean } from '../assert';
+import type { Session } from '../model';
 import type { Claims } from '../types';
 import { epoch } from '../utils';
 import type { SessionStoreInterface } from './types';
 
+/**
+ * Base session store behavior shared by concrete storage implementations.
+ *
+ * The base class enforces absolute and rolling expiry before returning a
+ * session.
+ */
 export abstract class AbstractSessionStore<UserClaims extends Claims = Claims>
   implements SessionStoreInterface<UserClaims>
 {
@@ -15,9 +21,9 @@ export abstract class AbstractSessionStore<UserClaims extends Claims = Claims>
   protected abstract _delete(): Promise<void>;
 
   /**
-   * @param request
-   * @param response
-   * @returns
+   * Reads and validates the current session.
+   *
+   * @returns The session, or `undefined` when missing, expired, or malformed.
    */
   public async get(): Promise<Session<UserClaims> | undefined> {
     const { duration } = this.config.session;
@@ -26,13 +32,11 @@ export abstract class AbstractSessionStore<UserClaims extends Claims = Claims>
       const session = await this._get();
 
       if (session) {
-        // check that the session isn't expired based
         assertBoolean(
           session.expiresAt > epoch(),
           'it is expired based on options when it was established',
         );
 
-        // check that the existing session isn't expired based on current rollingDuration rules
         if (duration) {
           assertBoolean(
             session.updatedAt + duration > epoch(),
@@ -43,24 +47,40 @@ export abstract class AbstractSessionStore<UserClaims extends Claims = Claims>
         return session;
       }
     } catch {
-      // debug('error handling session %O', err);
+      return undefined;
     }
 
     return undefined;
   }
 
+  /**
+   * Persists a complete session.
+   */
   async set(session: Session<UserClaims>): Promise<void> {
     await this._set(session);
   }
 
+  /**
+   * Clears the session from the backing store.
+   */
   async delete(): Promise<void> {
     await this._delete();
   }
 
+  /**
+   * Updates rolling expiry timestamps and persists the session.
+   *
+   * When rolling sessions are disabled, this returns the current session
+   * without modifying cookies.
+   */
   async touch(): Promise<Session<UserClaims> | undefined> {
     const session = await this.get();
     if (!session) {
       return;
+    }
+
+    if (this.config.session.duration === false) {
+      return session;
     }
 
     const updatedAt = epoch();
@@ -77,6 +97,9 @@ export abstract class AbstractSessionStore<UserClaims extends Claims = Claims>
 
 function calculateExp(uat: number, config: Config): number {
   const { duration } = config.session;
+  if (duration === false) {
+    return uat;
+  }
 
-  return uat + (duration as number);
+  return uat + duration;
 }

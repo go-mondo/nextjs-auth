@@ -1,22 +1,17 @@
-import { getInstance } from './init';
-import {
-  type GetSession,
-  getSessionFactory,
-  type TouchSession,
-  touchSessionFactory,
-  type UpdateSession,
-  updateSessionFactory,
-} from './session/factory';
-import type { Claims } from './session/types';
-
-export const getSession = <UserClaims extends Claims>(
-  ...args: Parameters<GetSession<UserClaims>>
-) => getSessionFactory(getInstance())(...args);
-
-export const touchSession = <UserClaims extends Claims>(
-  ...args: Parameters<TouchSession<UserClaims>>
-) => touchSessionFactory(getInstance())(...args);
-
-export const updateSession = <UserClaims extends Claims>(
-  ...args: Parameters<UpdateSession<UserClaims>>
-) => updateSessionFactory(getInstance())(...args);
+/**
+ * Public package entrypoint.
+ *
+ * Prefer creating one auth client with {@link createAuth} and reusing it from
+ * route handlers, server code, and `proxy.ts`.
+ */
+export { createAuth, MondoAuthClient } from './client';
+export type {
+  HandleAuthOptions,
+  ProxyOptions,
+} from './client';
+export type {
+  AccessTokenResult,
+  GetAccessTokenOptions,
+} from './oidc/access-token';
+export type { Config, PartialConfig } from './config/types';
+export type { Claims, UserProfile } from './session/types';

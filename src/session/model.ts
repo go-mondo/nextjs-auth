@@ -1,4 +1,4 @@
-import type { TokenEndpointResponse } from '../types';
+import type { TokenEndpointResponse } from '../oidc/types';
 import type {
   BaseSession,
   Claims,
@@ -17,9 +17,12 @@ export type SerializedSession<UserClaims extends Claims = Claims> =
 /**
  * The user's session.
  *
+ * The public session shape combines the base user claims cookie with optional
+ * authentication and authorization cookies.
+ *
  * @category Server
  */
-export default class Session<UserClaims extends Claims = Claims>
+export class Session<UserClaims extends Claims = Claims>
   implements BaseSession<UserClaims>
 {
   /**
@@ -42,18 +45,15 @@ export default class Session<UserClaims extends Claims = Claims>
    */
   expiresAt: number;
 
-  /**
-   *
-   */
   authorization?: SessionAuthorization;
 
-  /**
-   *
-   */
   authentication?: SessionAuthentication;
 
   [key: string]: any;
 
+  /**
+   * Creates a normalized session object from sealed cookie payloads.
+   */
   constructor(props: SerializedSession<UserClaims>) {
     this.user = props.user;
     this.issuedAt = props.issuedAt;
@@ -64,15 +64,20 @@ export default class Session<UserClaims extends Claims = Claims>
   }
 }
 
+/**
+ * Converts an OIDC token endpoint response into the session model stored in
+ * sealed cookies.
+ *
+ * @param tokenEndpointResponse - Token endpoint response returned by
+ * `openid-client`.
+ */
 export function fromTokenEndpointResponse<UserClaims extends Claims = Claims>(
   tokenEndpointResponse: TokenEndpointResponse,
 ): Session<UserClaims> {
-  // Get the claims without any OIDC-specific claim.
   const { iat, exp, aud, iss, nonce, ...user } = decodeJwt<IdTokenClaims>(
     tokenEndpointResponse.id_token as string,
   );
 
-  // Get other response data
   const {
     id_token,
     access_token,
@@ -141,46 +146,3 @@ function decodeJwt<TClaims>(jwt: string): TClaims {
 
   return JSON.parse(json) as TClaims;
 }
-
-// /**
-//  * @ignore
-//  */
-// export function fromJson(session: SerializedSession | undefined): Session | null {
-//   if (!session) {
-//     return null;
-//   }
-
-//   const {
-//     user,
-//     issuedAt,
-//     updatedAt,
-//     expiresAt,
-//     // Authorization
-//     accessToken,
-//     accessTokenScope,
-//     accessTokenExpiresAt,
-//     refreshToken,
-//     accessTokenType,
-//     // Authentication
-//     idToken,
-//     ...remainder
-//   } = session
-
-//   return Object.assign(
-//     new Session({
-//       user,
-//       issuedAt,
-//       updatedAt,
-//       expiresAt,
-//       // Authorization
-//       accessToken,
-//       accessTokenScope,
-//       accessTokenExpiresAt,
-//       refreshToken,
-//       accessTokenType,
-//       // Authentication
-//       idToken,
-//     }),
-//     remainder
-//   );
-// }
