@@ -27,11 +27,17 @@ const SessionSchema = z
       .optional()
       .default('Mondo')
       .describe('Cookie name prefix used for the session cookie set.'),
-    duration: z
+    idleDuration: z
       .union([z.number().positive(), z.literal(false)])
       .default(24 * 60 * 60)
       .describe(
-        'Rolling session duration in seconds. Set to false to disable rolling session updates.',
+        'Idle session duration in seconds. Set to false to disable activity-based session extension.',
+      ),
+    absoluteDuration: z
+      .union([z.number().positive(), z.literal(false)])
+      .default(false)
+      .describe(
+        'Absolute session duration in seconds from login. Set to false to disable a hard maximum lifetime.',
       ),
     cookie: z
       .object({
@@ -59,7 +65,12 @@ const SessionSchema = z
       })
       .describe('Cookie options for the tamper-proof iron-session cookies.'),
   })
-  .describe('Application session storage and rolling expiration settings.');
+  .refine(
+    (session) =>
+      session.idleDuration !== false || session.absoluteDuration !== false,
+    'At least one of idleDuration or absoluteDuration must be enabled.',
+  )
+  .describe('Application session storage and expiration settings.');
 
 const Schema = z
   .object({

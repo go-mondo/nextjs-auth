@@ -12,21 +12,17 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
+        "types": "./dist/client.d.ts",
+        "default": "./dist/client.js"
       },
       "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
+        "types": "./dist/client.d.cts",
+        "default": "./dist/client.cjs"
       }
     },
-    "./package.json": "./package.json",
     "./client": {
       "import": {
         "types": "./dist/client.d.ts",
@@ -36,7 +32,48 @@
         "types": "./dist/client.d.cts",
         "default": "./dist/client.cjs"
       }
-    }
+    },
+    "./config": {
+      "import": {
+        "types": "./dist/config.d.ts",
+        "default": "./dist/config.js"
+      },
+      "require": {
+        "types": "./dist/config.d.cts",
+        "default": "./dist/config.cjs"
+      }
+    },
+    "./errors": {
+      "import": {
+        "types": "./dist/errors.d.ts",
+        "default": "./dist/errors.js"
+      },
+      "require": {
+        "types": "./dist/errors.d.cts",
+        "default": "./dist/errors.cjs"
+      }
+    },
+    "./oidc": {
+      "import": {
+        "types": "./dist/oidc.d.ts",
+        "default": "./dist/oidc.js"
+      },
+      "require": {
+        "types": "./dist/oidc.d.cts",
+        "default": "./dist/oidc.cjs"
+      }
+    },
+    "./session": {
+      "import": {
+        "types": "./dist/session.d.ts",
+        "default": "./dist/session.js"
+      },
+      "require": {
+        "types": "./dist/session.d.cts",
+        "default": "./dist/session.cjs"
+      }
+    },
+    "./package.json": "./package.json"
   },
   "scripts": {
     "build": "tsup",

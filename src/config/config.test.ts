@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getConfig, MondoAuthConfigError } from './config';
+import { ConfigError } from '../errors/config';
+import { getConfig } from './config';
 import schema from './schema';
 
 const validConfig = {
@@ -32,24 +33,50 @@ describe('getConfig', () => {
     expect(config.authorizationParams.audience).toBe('https://api.example.com');
   });
 
-  it('allows rolling session updates to be disabled', () => {
+  it('allows idle session updates to be disabled when absolute expiry is set', () => {
     const config = getConfig({
       ...validConfig,
       session: {
-        duration: false,
+        idleDuration: false,
+        absoluteDuration: 3600,
       },
     });
 
-    expect(config.session.duration).toBe(false);
+    expect(config.session.idleDuration).toBe(false);
+    expect(config.session.absoluteDuration).toBe(3600);
+  });
+
+  it('requires at least one session expiration mode', () => {
+    expect(() =>
+      getConfig({
+        ...validConfig,
+        session: {
+          idleDuration: false,
+          absoluteDuration: false,
+        },
+      }),
+    ).toThrow('At least one of idleDuration or absoluteDuration');
   });
 
   it('throws a readable error when required configuration is missing', () => {
-    expect(() => getConfig({ clientId: 'client-id' })).toThrow(
-      MondoAuthConfigError,
-    );
+    expect(() => getConfig({ clientId: 'client-id' })).toThrow(ConfigError);
     expect(() => getConfig({ clientId: 'client-id' })).toThrow(
       'Invalid @go-mondo/nextjs-auth configuration',
     );
+
+    try {
+      getConfig({ clientId: 'client-id' });
+    } catch (error) {
+      expect(error).toBeInstanceOf(ConfigError);
+      expect((error as ConfigError).issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            message: expect.any(String),
+            path: expect.any(Array),
+          }),
+        ]),
+      );
+    }
   });
 
   it('rejects route paths that contain double slashes', () => {

@@ -46,34 +46,51 @@ describe('AbstractSessionStore', () => {
     await expect(store.get()).resolves.toBeUndefined();
   });
 
-  it('hides sessions past rolling duration', async () => {
+  it('hides sessions past idle duration', async () => {
     const store = new MemorySessionStore(
-      createTestConfig({ session: { duration: 60 } }),
+      createTestConfig({ session: { idleDuration: 60 } }),
       createSession({ updatedAt: epoch() - 61, expiresAt: epoch() + 3600 }),
     );
 
     await expect(store.get()).resolves.toBeUndefined();
   });
 
-  it('ignores rolling expiry when session duration is disabled', async () => {
+  it('hides sessions past absolute duration', async () => {
+    const store = new MemorySessionStore(
+      createTestConfig({
+        session: { idleDuration: false, absoluteDuration: 3600 },
+      }),
+      createSession({
+        issuedAt: epoch() - 3601,
+        updatedAt: epoch(),
+        expiresAt: epoch() + 3600,
+      }),
+    );
+
+    await expect(store.get()).resolves.toBeUndefined();
+  });
+
+  it('ignores idle expiry when idle duration is disabled', async () => {
     const session = createSession({
       updatedAt: epoch() - 10_000,
       expiresAt: epoch() + 3600,
     });
     const store = new MemorySessionStore(
-      createTestConfig({ session: { duration: false } }),
+      createTestConfig({
+        session: { idleDuration: false, absoluteDuration: 3600 },
+      }),
       session,
     );
 
     await expect(store.get()).resolves.toBe(session);
   });
 
-  it('touches sessions when rolling duration is enabled', async () => {
+  it('touches sessions when idle duration is enabled', async () => {
     const now = epoch();
     vi.useFakeTimers({ now: now * 1000 });
     const session = createSession({ updatedAt: now - 10, expiresAt: now + 50 });
     const store = new MemorySessionStore(
-      createTestConfig({ session: { duration: 60 } }),
+      createTestConfig({ session: { idleDuration: 60 } }),
       session,
     );
 
@@ -84,14 +101,57 @@ describe('AbstractSessionStore', () => {
     vi.useRealTimers();
   });
 
-  it('does not touch sessions when rolling duration is disabled', async () => {
-    const session = createSession();
+  it('caps touched sessions at absolute duration', async () => {
+    const now = epoch();
+    vi.useFakeTimers({ now: now * 1000 });
+    const session = createSession({
+      issuedAt: now - 50,
+      updatedAt: now - 10,
+      expiresAt: now + 50,
+    });
+    const store = new MemorySessionStore(
+      createTestConfig({
+        session: { idleDuration: 60, absoluteDuration: 75 },
+      }),
+      session,
+    );
+
+    await expect(store.touch()).resolves.toBe(session);
+
+    expect(session.updatedAt).toBe(now);
+    expect(session.expiresAt).toBe(now + 25);
+    vi.useRealTimers();
+  });
+
+  it('normalizes persisted sessions to the effective expiry', async () => {
+    const now = epoch();
+    const session = createSession({
+      issuedAt: now - 50,
+      updatedAt: now,
+      expiresAt: now + 3600,
+    });
+    const store = new MemorySessionStore(
+      createTestConfig({
+        session: { idleDuration: 60, absoluteDuration: 75 },
+      }),
+      undefined,
+    );
+
+    await store.set(session);
+
+    expect(session.expiresAt).toBe(now + 25);
+  });
+
+  it('does not touch sessions when idle duration is disabled', async () => {
+    const session = createSession({ expiresAt: epoch() + 3600 });
     const original = {
       updatedAt: session.updatedAt,
       expiresAt: session.expiresAt,
     };
     const store = new MemorySessionStore(
-      createTestConfig({ session: { duration: false } }),
+      createTestConfig({
+        session: { idleDuration: false, absoluteDuration: 3600 },
+      }),
       session,
     );
 

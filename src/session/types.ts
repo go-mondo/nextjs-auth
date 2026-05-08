@@ -61,7 +61,7 @@ export type UserProfile<ExtraClaims extends Claims> = {
   phone_number_verified?: boolean;
 } & ExtraClaims;
 
-export interface BaseSession<UserClaims extends Claims> {
+export interface SessionInterface<UserClaims extends Claims> {
   /**
    * The authenticated user
    */
@@ -120,6 +120,6 @@ export interface SessionAuthorization {
 }
 
 export type SessionPart<UserClaims extends Claims = Claims> =
-  | BaseSession<UserClaims>
+  | SessionInterface<UserClaims>
   | SessionAuthentication
   | SessionAuthorization;

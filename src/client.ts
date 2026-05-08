@@ -175,8 +175,8 @@ export class MondoAuthClient<UserClaims extends Claims = Claims> {
   };
 
   /**
-   * Drop this into `proxy.ts` to protect matched routes and keep rolling
-   * sessions fresh at the request boundary.
+   * Drop this into `proxy.ts` to protect matched routes and keep idle sessions
+   * fresh at the request boundary.
    */
   proxy = async (
     request: Request,

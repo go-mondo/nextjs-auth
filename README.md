@@ -12,6 +12,14 @@ from `proxy.ts`, read the current session, and return or refresh access tokens.
 pnpm add @go-mondo/nextjs-auth
 ```
 
+## Public Entry Points
+
+This package uses explicit subpath exports for supporting types. Import the
+auth client from `@go-mondo/nextjs-auth` or `@go-mondo/nextjs-auth/client`, and
+import supporting public types from `@go-mondo/nextjs-auth/config`,
+`@go-mondo/nextjs-auth/session`, `@go-mondo/nextjs-auth/oidc`, or
+`@go-mondo/nextjs-auth/errors`.
+
 ## Environment
 
 At minimum, configure:
@@ -37,7 +45,8 @@ MONDO_SESSION="/auth/session"
 MONDO_ACCESS_TOKEN="/auth/access-token"
 MONDO_POST_LOGOUT_REDIRECT="/"
 
-MONDO_SESSION_DURATION="86400"
+MONDO_SESSION_IDLE_DURATION="86400"
+MONDO_SESSION_ABSOLUTE_DURATION="604800"
 MONDO_COOKIE_SECURE="true"
 MONDO_COOKIE_SAME_SITE="lax"
 ```
@@ -190,7 +199,8 @@ export const auth = createAuth({
     scope: 'openid profile email offline_access reports:read',
   },
   session: {
-    duration: 60 * 60 * 24,
+    idleDuration: 60 * 60 * 24,
+    absoluteDuration: 60 * 60 * 24 * 7,
     cookie: {
       secure: true,
       sameSite: 'lax',
@@ -243,6 +253,18 @@ The session is split into sealed `iron-session` cookies:
 
 This keeps the session stateless and tamper-proof while avoiding a server-side
 session database. Cookies are HTTP-only by default.
+
+## Session Expiration
+
+Sessions support both idle and absolute expiration. `idleDuration` extends the
+session when authenticated activity touches it, such as protected requests
+handled by `auth.proxy()` or the session JSON route. `absoluteDuration` caps the
+session lifetime from the original login time, regardless of activity.
+
+The stored `expiresAt` timestamp is the earlier of the idle and absolute
+expiration times. Set `idleDuration: false` to disable activity-based extension;
+set `absoluteDuration: false` to disable the hard maximum lifetime. At least one
+expiration mode must be enabled.
 
 ## Development
 

@@ -7,10 +7,10 @@ import { Session } from '../model';
 import type {
   AnyRequest,
   AnyResponse,
-  BaseSession,
   Claims,
   SessionAuthentication,
   SessionAuthorization,
+  SessionInterface,
   SessionPart,
 } from '../types';
 import { AbstractSessionStore } from './abstract-store';
@@ -117,7 +117,7 @@ export class NewStatelessSessionStore<
 
   private async getAllCookies() {
     return await Promise.all([
-      this.getCookie<BaseSession<UserClaims>>('Session'),
+      this.getCookie<SessionInterface<UserClaims>>('Session'),
       this.getCookie<SessionAuthorization>('Authorization'),
       this.getCookie<SessionAuthentication>('Authentication'),
     ]);

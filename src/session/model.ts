@@ -1,15 +1,15 @@
 import type { TokenEndpointResponse } from '../oidc/types';
 import type {
-  BaseSession,
   Claims,
   IdTokenClaims,
   SessionAuthentication,
   SessionAuthorization,
+  SessionInterface,
   UserProfile,
 } from './types';
 
 export type SerializedSession<UserClaims extends Claims = Claims> =
-  BaseSession<UserClaims> & {
+  SessionInterface<UserClaims> & {
     authentication?: SessionAuthentication;
     authorization?: SessionAuthorization;
   };
@@ -23,7 +23,7 @@ export type SerializedSession<UserClaims extends Claims = Claims> =
  * @category Server
  */
 export class Session<UserClaims extends Claims = Claims>
-  implements BaseSession<UserClaims>
+  implements SessionInterface<UserClaims>
 {
   /**
    * The authenticated user (claims from the `id_token`)

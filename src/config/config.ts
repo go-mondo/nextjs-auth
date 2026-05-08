@@ -1,3 +1,4 @@
+import { ConfigError } from '../errors/config';
 import schema from './schema';
 import type {
   Config,
@@ -7,16 +8,6 @@ import type {
   TransactionConfig,
 } from './types';
 import { bool, num } from './utils';
-
-export class MondoAuthConfigError extends Error {
-  /**
-   * @param message - Human-readable validation summary.
-   */
-  constructor(message: string) {
-    super(message);
-    this.name = 'MondoAuthConfigError';
-  }
-}
 
 /**
  * Reads configuration from environment variables and explicit overrides, then
@@ -38,7 +29,9 @@ export class MondoAuthConfigError extends Error {
  * - `MONDO_AUDIENCE`: See {@link Config.authorizationParams}.
  * - `MONDO_SCOPE`: See {@link Config.authorizationParams}.
  * - `MONDO_SESSION_NAME`: See {@link SessionConfig.name}.
- * - `MONDO_SESSION_DURATION`: See {@link SessionConfig.duration}.
+ * - `MONDO_SESSION_IDLE_DURATION`: See {@link SessionConfig.idleDuration}.
+ * - `MONDO_SESSION_ABSOLUTE_DURATION`: See
+ *   {@link SessionConfig.absoluteDuration}.
  * - `MONDO_SESSION_COOKIE_DOMAIN`: See {@link CookieConfig.domain}.
  * - `MONDO_SESSION_COOKIE_PATH`: See {@link CookieConfig.path}.
  * - `MONDO_SESSION_COOKIE_SECURE`: See {@link CookieConfig.secure}.
@@ -51,8 +44,7 @@ export class MondoAuthConfigError extends Error {
  * - `MONDO_TRANSACTION_COOKIE_SAME_SITE` See {@link CookieConfig.sameSite}.
  *
  * @param params - Optional explicit configuration overrides.
- * @throws {@link MondoAuthConfigError} when required values are missing or
- * invalid.
+ * @throws {@link ConfigError} when required values are missing or invalid.
  */
 export const getConfig = (params: PartialConfig = {}): Config => {
   const MONDO_SECRET = process.env.MONDO_SECRET;
@@ -71,7 +63,9 @@ export const getConfig = (params: PartialConfig = {}): Config => {
   const MONDO_POST_LOGOUT_REDIRECT = process.env.MONDO_POST_LOGOUT_REDIRECT;
 
   const MONDO_SESSION_NAME = process.env.MONDO_SESSION_NAME;
-  const MONDO_SESSION_DURATION = process.env.MONDO_SESSION_DURATION;
+  const MONDO_SESSION_IDLE_DURATION = process.env.MONDO_SESSION_IDLE_DURATION;
+  const MONDO_SESSION_ABSOLUTE_DURATION =
+    process.env.MONDO_SESSION_ABSOLUTE_DURATION;
   const MONDO_SESSION_COOKIE_DOMAIN = process.env.MONDO_COOKIE_DOMAIN;
   const MONDO_SESSION_COOKIE_PATH = process.env.MONDO_COOKIE_PATH;
   const MONDO_SESSION_COOKIE_SECURE = process.env.MONDO_COOKIE_SECURE;
@@ -107,10 +101,8 @@ export const getConfig = (params: PartialConfig = {}): Config => {
     },
     session: {
       name: MONDO_SESSION_NAME,
-      duration:
-        MONDO_SESSION_DURATION && Number.isNaN(Number(MONDO_SESSION_DURATION))
-          ? (bool(MONDO_SESSION_DURATION) as false)
-          : num(MONDO_SESSION_DURATION),
+      idleDuration: duration(MONDO_SESSION_IDLE_DURATION),
+      absoluteDuration: duration(MONDO_SESSION_ABSOLUTE_DURATION),
       ...params.session,
       cookie: {
         domain: MONDO_SESSION_COOKIE_DOMAIN,
@@ -157,17 +149,16 @@ export const getConfig = (params: PartialConfig = {}): Config => {
   });
 
   if (!result.success) {
-    const issues = result.error.issues
-      .map((issue) => {
-        const path = issue.path.length ? issue.path.join('.') : 'config';
-        return `- ${path}: ${issue.message}`;
-      })
-      .join('\n');
-
-    throw new MondoAuthConfigError(
-      `Invalid @go-mondo/nextjs-auth configuration:\n${issues}`,
-    );
+    throw new ConfigError(result.error.issues);
   }
 
   return result.data;
 };
+
+function duration(value: string | undefined): number | false | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return Number.isNaN(Number(value)) ? (bool(value) as false) : num(value);
+}
