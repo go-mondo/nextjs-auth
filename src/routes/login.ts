@@ -54,7 +54,7 @@ export const loginHandlerFactory =
 
       return await handler(
         instance,
-        transactionStoreFactory(instance.config, await cookieFactory(req)),
+        transactionStoreFactory(instance.config, await cookieFactory()),
         buildOptions(
           instance.config,
           options,

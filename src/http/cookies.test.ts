@@ -1,5 +1,48 @@
-import { describe, expect, it } from 'vitest';
-import { HttpCookieStore } from './cookies';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mocks = vi.hoisted(() => ({
+  cookies: vi.fn(),
+}));
+
+vi.mock('next/headers.js', () => ({
+  cookies: mocks.cookies,
+}));
+
+const { HttpCookieStore, cookieFactory } = await import('./cookies');
+
+describe('cookieFactory', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('delegates to Next cookies when a request is not provided', async () => {
+    const nextCookieStore = { get: vi.fn(), set: vi.fn() };
+    mocks.cookies.mockResolvedValue(nextCookieStore);
+
+    await expect(cookieFactory()).resolves.toBe(nextCookieStore);
+    expect(mocks.cookies).toHaveBeenCalledWith();
+  });
+
+  it('uses the HTTP cookie adapter when a request is provided', async () => {
+    const response = new Response();
+    const store = await cookieFactory(
+      new Request('https://app.example.com', {
+        headers: { cookie: 'session=abc123' },
+      }),
+      response,
+    );
+
+    expect(mocks.cookies).not.toHaveBeenCalled();
+    expect(store).toBeInstanceOf(HttpCookieStore);
+    expect(store.get('session')).toEqual({ name: 'session', value: 'abc123' });
+
+    store.set('session', 'updated', { path: '/', secure: true });
+
+    expect(response.headers.get('set-cookie')).toBe(
+      'session=updated; Path=/; Secure',
+    );
+  });
+});
 
 describe('HttpCookieStore', () => {
   it('reads cookies from the request header', () => {

@@ -70,6 +70,7 @@ describe('loginHandlerFactory', () => {
       returnTo: '/profile',
     })(new Request('https://preview.example.com/auth/login'));
 
+    expect(mocks.cookieFactory).toHaveBeenCalledWith();
     expect(transactionStore.save).toHaveBeenCalledWith({
       code_verifier: 'verifier',
       max_age: 300,

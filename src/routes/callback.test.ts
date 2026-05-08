@@ -67,6 +67,7 @@ describe('callbackHandlerFactory', () => {
       new Request('https://app.example.com/auth/callback?code=abc&state=state'),
     );
 
+    expect(mocks.cookieFactory).toHaveBeenCalledWith();
     expect(mocks.authorizationCodeGrant).toHaveBeenCalledWith(
       { issuer: 'https://id.example.com' },
       new URL('https://app.example.com/auth/callback?code=abc&state=state'),

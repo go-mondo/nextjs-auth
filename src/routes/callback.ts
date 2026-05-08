@@ -44,7 +44,7 @@ export const callbackHandlerFactory =
   (options?: CallbackOptions) =>
   async (req: Request): Promise<Response> => {
     try {
-      const cookieStore = await cookieFactory(req);
+      const cookieStore = await cookieFactory();
 
       return await handler<UserClaims>(
         instance,
