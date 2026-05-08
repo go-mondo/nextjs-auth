@@ -20,5 +20,18 @@ export const DEFAULT_ROUTES = {
 export function getPublicSessionRoute(): string {
   return typeof process === 'undefined'
     ? DEFAULT_ROUTES.session
-    : process.env.NEXT_PUBLIC_MONDO_SESSION || DEFAULT_ROUTES.session;
+    : process.env.NEXT_PUBLIC_MONDO_SESSION_ROUTE || DEFAULT_ROUTES.session;
+}
+
+/**
+ * Returns the access-token route that browser code can safely call.
+ *
+ * The full server configuration may read secret-bearing environment variables,
+ * so client hooks use the public access-token route override instead.
+ */
+export function getPublicAccessTokenRoute(): string {
+  return typeof process === 'undefined'
+    ? DEFAULT_ROUTES.accessToken
+    : process.env.NEXT_PUBLIC_MONDO_ACCESS_TOKEN_ROUTE ||
+        DEFAULT_ROUTES.accessToken;
 }

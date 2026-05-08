@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server.js';
 import {
   type GetAccessTokenOptions,
   getAccessTokenFactory,
-} from './oidc/access-token';
+} from './oauth/access-token';
 import type { PartialConfig } from './config/types';
 import { initInstance, type MondoInstance } from './core/instance';
 import {

@@ -24,12 +24,16 @@ import { bool, num } from './utils';
  *
  * ### Optional
  *
- * - `NEXT_PUBLIC_MONDO_LOGIN`: See {@link Config.routes}.
- * - `NEXT_PUBLIC_MONDO_SESSION`: See {@link Config.routes}.
- * - `MONDO_CALLBACK`: See {@link Config.routes}.
- * - `MONDO_POST_LOGOUT_REDIRECT`: See {@link Config.routes}.
- * - `MONDO_AUDIENCE`: See {@link Config.authorizationParams}.
- * - `MONDO_SCOPE`: See {@link Config.authorizationParams}.
+ * - `NEXT_PUBLIC_MONDO_LOGIN_ROUTE`: See {@link Config.routes}.
+ * - `NEXT_PUBLIC_MONDO_SESSION_ROUTE`: See {@link Config.routes}.
+ * - `NEXT_PUBLIC_MONDO_ACCESS_TOKEN_ROUTE`: See {@link Config.routes}.
+ * - `MONDO_CALLBACK_ROUTE`: See {@link Config.routes}.
+ * - `MONDO_LOGOUT_ROUTE`: See {@link Config.routes}.
+ * - `MONDO_SESSION_ROUTE`: See {@link Config.routes}.
+ * - `MONDO_ACCESS_TOKEN_ROUTE`: See {@link Config.routes}.
+ * - `MONDO_POST_LOGOUT_REDIRECT_ROUTE`: See {@link Config.routes}.
+ * - `MONDO_AUDIENCE`: See {@link Config.authorization}.
+ * - `MONDO_SCOPE`: See {@link Config.authorization}.
  * - `MONDO_SESSION_NAME`: See {@link SessionConfig.name}.
  * - `MONDO_SESSION_IDLE_DURATION`: See {@link SessionConfig.idleDuration}.
  * - `MONDO_SESSION_ABSOLUTE_DURATION`: See
@@ -58,12 +62,16 @@ export const getConfig = (params: PartialConfig = {}): Config => {
   const MONDO_AUDIENCE = process.env.MONDO_AUDIENCE;
   const MONDO_SCOPE = process.env.MONDO_SCOPE;
 
-  const MONDO_CALLBACK = process.env.MONDO_CALLBACK;
-  const MONDO_LOGOUT = process.env.MONDO_LOGOUT;
-  const MONDO_SESSION = process.env.MONDO_SESSION;
-  const NEXT_PUBLIC_MONDO_SESSION = process.env.NEXT_PUBLIC_MONDO_SESSION;
-  const MONDO_ACCESS_TOKEN = process.env.MONDO_ACCESS_TOKEN;
-  const MONDO_POST_LOGOUT_REDIRECT = process.env.MONDO_POST_LOGOUT_REDIRECT;
+  const MONDO_CALLBACK_ROUTE = process.env.MONDO_CALLBACK_ROUTE;
+  const MONDO_LOGOUT_ROUTE = process.env.MONDO_LOGOUT_ROUTE;
+  const MONDO_SESSION_ROUTE = process.env.MONDO_SESSION_ROUTE;
+  const NEXT_PUBLIC_MONDO_SESSION_ROUTE =
+    process.env.NEXT_PUBLIC_MONDO_SESSION_ROUTE;
+  const MONDO_ACCESS_TOKEN_ROUTE = process.env.MONDO_ACCESS_TOKEN_ROUTE;
+  const NEXT_PUBLIC_MONDO_ACCESS_TOKEN_ROUTE =
+    process.env.NEXT_PUBLIC_MONDO_ACCESS_TOKEN_ROUTE;
+  const MONDO_POST_LOGOUT_REDIRECT_ROUTE =
+    process.env.MONDO_POST_LOGOUT_REDIRECT_ROUTE;
 
   const MONDO_SESSION_NAME = process.env.MONDO_SESSION_NAME;
   const MONDO_SESSION_IDLE_DURATION = process.env.MONDO_SESSION_IDLE_DURATION;
@@ -96,11 +104,11 @@ export const getConfig = (params: PartialConfig = {}): Config => {
     clientId: MONDO_CLIENT_ID,
     clientSecret: MONDO_CLIENT_SECRET,
     ...params,
-    authorizationParams: {
+    authorization: {
       response_type: 'code',
       audience: MONDO_AUDIENCE,
       scope: MONDO_SCOPE,
-      ...params.authorizationParams,
+      ...params.authorization,
     },
     session: {
       name: MONDO_SESSION_NAME,
@@ -121,24 +129,28 @@ export const getConfig = (params: PartialConfig = {}): Config => {
     },
     routes: {
       callback:
-        params.routes?.callback || MONDO_CALLBACK || DEFAULT_ROUTES.callback,
+        params.routes?.callback ||
+        MONDO_CALLBACK_ROUTE ||
+        DEFAULT_ROUTES.callback,
       login:
         params.routes?.login ||
-        process.env.NEXT_PUBLIC_MONDO_LOGIN ||
+        process.env.NEXT_PUBLIC_MONDO_LOGIN_ROUTE ||
         DEFAULT_ROUTES.login,
-      logout: params.routes?.logout || MONDO_LOGOUT || DEFAULT_ROUTES.logout,
+      logout:
+        params.routes?.logout || MONDO_LOGOUT_ROUTE || DEFAULT_ROUTES.logout,
       session:
         params.routes?.session ||
-        MONDO_SESSION ||
-        NEXT_PUBLIC_MONDO_SESSION ||
+        MONDO_SESSION_ROUTE ||
+        NEXT_PUBLIC_MONDO_SESSION_ROUTE ||
         DEFAULT_ROUTES.session,
       accessToken:
         params.routes?.accessToken ||
-        MONDO_ACCESS_TOKEN ||
+        MONDO_ACCESS_TOKEN_ROUTE ||
+        NEXT_PUBLIC_MONDO_ACCESS_TOKEN_ROUTE ||
         DEFAULT_ROUTES.accessToken,
       postLogoutRedirect:
         params.routes?.postLogoutRedirect ||
-        MONDO_POST_LOGOUT_REDIRECT ||
+        MONDO_POST_LOGOUT_REDIRECT_ROUTE ||
         DEFAULT_ROUTES.postLogoutRedirect,
     },
     transaction: {

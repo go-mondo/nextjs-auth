@@ -10,6 +10,9 @@ export interface Claims {
   [key: string]: any;
 }
 
+/**
+ * Claims decoded from an OIDC `id_token`.
+ */
 export type IdTokenClaims<ExtraClaims extends Claims = Claims> =
   UserProfile<ExtraClaims> & {
     nonce: string;
@@ -19,6 +22,9 @@ export type IdTokenClaims<ExtraClaims extends Claims = Claims> =
     exp: number;
   };
 
+/**
+ * Normalized user profile claims exposed on a session.
+ */
 export type UserProfile<ExtraClaims extends Claims> = {
   /**
    * The tenant context
@@ -56,7 +62,7 @@ export type UserProfile<ExtraClaims extends Claims> = {
   phone_number?: string;
 
   /**
-   * Identifies whether the email is verified
+   * Identifies whether the phone number is verified
    */
   phone_number_verified?: boolean;
 } & ExtraClaims;

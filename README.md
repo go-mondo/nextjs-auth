@@ -2,9 +2,10 @@
 
 Next.js authentication helpers for Mondo Identity.
 
-This package provides a small OIDC auth layer for modern Next.js apps. It is
-centered around a single auth client that can mount auth routes, protect routes
-from `proxy.ts`, read the current session, and return or refresh access tokens.
+This package provides a small OAuth/OIDC auth layer for modern Next.js apps. It
+is centered around a single auth client that can mount auth routes, protect
+routes from `proxy.ts`, read the current session, and return or refresh access
+tokens.
 
 ## Install
 
@@ -17,7 +18,7 @@ pnpm add @go-mondo/nextjs-auth
 This package uses explicit subpath exports for supporting types. Import the
 auth client from `@go-mondo/nextjs-auth` or `@go-mondo/nextjs-auth/client`, and
 import supporting public types from `@go-mondo/nextjs-auth/config`,
-`@go-mondo/nextjs-auth/session`, `@go-mondo/nextjs-auth/oidc`, or
+`@go-mondo/nextjs-auth/session`, `@go-mondo/nextjs-auth/oauth`, or
 `@go-mondo/nextjs-auth/errors`. Hooks are exported from
 `@go-mondo/nextjs-auth/hooks`.
 
@@ -39,13 +40,14 @@ Common optional values:
 MONDO_AUDIENCE="https://api.example.com"
 MONDO_SCOPE="openid profile email offline_access"
 
-NEXT_PUBLIC_MONDO_LOGIN="/auth/login"
-NEXT_PUBLIC_MONDO_SESSION="/auth/session"
-MONDO_CALLBACK="/auth/callback"
-MONDO_LOGOUT="/auth/logout"
-MONDO_SESSION="/auth/session"
-MONDO_ACCESS_TOKEN="/auth/access-token"
-MONDO_POST_LOGOUT_REDIRECT="/"
+NEXT_PUBLIC_MONDO_LOGIN_ROUTE="/auth/login"
+NEXT_PUBLIC_MONDO_SESSION_ROUTE="/auth/session"
+NEXT_PUBLIC_MONDO_ACCESS_TOKEN_ROUTE="/auth/access-token"
+MONDO_CALLBACK_ROUTE="/auth/callback"
+MONDO_LOGOUT_ROUTE="/auth/logout"
+MONDO_SESSION_ROUTE="/auth/session"
+MONDO_ACCESS_TOKEN_ROUTE="/auth/access-token"
+MONDO_POST_LOGOUT_REDIRECT_ROUTE="/"
 
 MONDO_SESSION_IDLE_DURATION="86400"
 MONDO_SESSION_ABSOLUTE_DURATION="604800"
@@ -229,6 +231,30 @@ The default access-token JSON endpoint is mounted at `/auth/access-token`.
 Prefer server-side access-token usage when possible; expose this endpoint only
 when browser code truly needs the token.
 
+Client components can request a current or refreshed access token with
+`useAccessToken`. The server still owns the refresh token; browser code only
+receives the short-lived access token returned by the mounted access-token
+route.
+
+```tsx
+'use client';
+
+import { useAccessToken } from '@go-mondo/nextjs-auth/hooks';
+
+export function ReportsClient() {
+  const { data: token } = useAccessToken({
+    scopes: ['reports:read'],
+    refresh: true,
+  });
+
+  return <button disabled={!token}>Load reports</button>;
+}
+```
+
+When `scopes`, `refresh`, or `refreshBeforeExpiresIn` are provided, the hook
+POSTs those options to `/auth/access-token`. The authorization server validates
+whether requested scopes are allowed for the stored refresh token.
+
 ## Custom Configuration
 
 You can configure the client in code instead of relying only on environment
@@ -247,7 +273,7 @@ export const auth = createAuth({
     'new-32-character-or-longer-secret',
     'old-32-character-or-longer-secret',
   ],
-  authorizationParams: {
+  authorization: {
     audience: 'https://api.example.com',
     scope: 'openid profile email offline_access reports:read',
   },

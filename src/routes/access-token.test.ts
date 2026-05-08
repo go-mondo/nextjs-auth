@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
   getAccessToken: vi.fn(),
 }));
 
-vi.mock('../oidc/access-token', () => ({
+vi.mock('../oauth/access-token', () => ({
   getAccessTokenFactory: () => mocks.getAccessToken,
 }));
 
@@ -43,6 +43,73 @@ describe('accessTokenHandlerFactory', () => {
     })(new Request('https://app.example.com'));
 
     await expect(response.json()).resolves.toEqual({ expiresAt: 123 });
+  });
+
+  it('uses POST body options when returning an access token', async () => {
+    mocks.getAccessToken.mockResolvedValue({
+      accessToken: 'access-token',
+      expiresAt: 123,
+      scope: 'reports:read',
+    });
+
+    const response = await handler()(
+      new Request('https://app.example.com', {
+        body: JSON.stringify({
+          refresh: true,
+          refreshBeforeExpiresIn: 120,
+          scopes: ['reports:read'],
+        }),
+        method: 'POST',
+      }),
+    );
+
+    expect(mocks.getAccessToken).toHaveBeenCalledWith({
+      refresh: true,
+      refreshBeforeExpiresIn: 120,
+      scopes: ['reports:read'],
+    });
+    await expect(response.json()).resolves.toEqual({
+      accessToken: 'access-token',
+      expiresAt: 123,
+      scope: 'reports:read',
+    });
+  });
+
+  it('accepts string scopes from POST body options', async () => {
+    mocks.getAccessToken.mockResolvedValue({
+      accessToken: 'access-token',
+      expiresAt: 123,
+      scope: 'reports:read',
+    });
+
+    await handler()(
+      new Request('https://app.example.com', {
+        body: JSON.stringify({ scopes: 'reports:read' }),
+        method: 'POST',
+      }),
+    );
+
+    expect(mocks.getAccessToken).toHaveBeenCalledWith({
+      scopes: 'reports:read',
+    });
+  });
+
+  it('keeps static options when POST body omits overrides', async () => {
+    mocks.getAccessToken.mockResolvedValue({
+      accessToken: 'access-token',
+      expiresAt: 123,
+    });
+
+    await handler({ refresh: true })(
+      new Request('https://app.example.com', {
+        body: JSON.stringify({}),
+        method: 'POST',
+      }),
+    );
+
+    expect(mocks.getAccessToken).toHaveBeenCalledWith({
+      refresh: true,
+    });
   });
 
   it.each([

@@ -11,7 +11,7 @@ vi.mock('openid-client', () => ({
   discovery: mocks.discovery,
 }));
 
-const { discoverOIDC } = await import('./discovery');
+const { discoverOIDC } = await import('./oidc');
 
 describe('discoverOIDC', () => {
   beforeEach(() => {

@@ -53,14 +53,14 @@
         "default": "./dist/errors.cjs"
       }
     },
-    "./oidc": {
+    "./oauth": {
       "import": {
-        "types": "./dist/oidc.d.ts",
-        "default": "./dist/oidc.js"
+        "types": "./dist/oauth.d.ts",
+        "default": "./dist/oauth.js"
       },
       "require": {
-        "types": "./dist/oidc.d.cts",
-        "default": "./dist/oidc.cjs"
+        "types": "./dist/oauth.d.cts",
+        "default": "./dist/oauth.cjs"
       }
     },
     "./hooks": {

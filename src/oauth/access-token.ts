@@ -4,7 +4,7 @@ import type { Session } from '../session/model';
 import { sessionStoreFactory } from '../session/stores/stateless-store';
 import type { Claims, SessionAuthorization } from '../session/types';
 import { epoch } from '../session/utils';
-import { discoverOIDC } from './discovery';
+import { discoverOIDC } from './oidc';
 
 export type AccessTokenResult = {
   /** Bearer token value returned by the identity provider. */

@@ -20,7 +20,7 @@ vi.mock('../transactions/store', () => ({
   transactionStoreFactory: mocks.transactionStoreFactory,
 }));
 
-vi.mock('../oidc/discovery', () => ({
+vi.mock('../oauth/oidc', () => ({
   discoverOIDC: mocks.discoverOIDC,
 }));
 
@@ -53,7 +53,7 @@ describe('loginHandlerFactory', () => {
     mocks.transactionStoreFactory.mockReturnValue(transactionStore);
 
     const response = await handler({
-      authorizationParams: {
+      authorization: {
         max_age: 300,
         scope: 'openid email',
       },

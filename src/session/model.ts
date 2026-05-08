@@ -1,4 +1,4 @@
-import type { TokenEndpointResponse } from '../oidc/types';
+import type { TokenEndpointResponse } from '../oauth/types';
 import type {
   Claims,
   IdTokenClaims,
@@ -8,6 +8,9 @@ import type {
   UserProfile,
 } from './types';
 
+/**
+ * Serializable session payload stored across sealed cookies.
+ */
 export type SerializedSession<UserClaims extends Claims = Claims> =
   SessionInterface<UserClaims> & {
     authentication?: SessionAuthentication;
@@ -45,8 +48,15 @@ export class Session<UserClaims extends Claims = Claims>
    */
   expiresAt: number;
 
+  /**
+   * OAuth access-token state stored separately from the base session payload.
+   */
   authorization?: SessionAuthorization;
 
+  /**
+   * OIDC authentication token state stored separately from the base session
+   * payload.
+   */
   authentication?: SessionAuthentication;
 
   [key: string]: any;

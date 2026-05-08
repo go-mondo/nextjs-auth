@@ -11,21 +11,33 @@ const validConfig = {
   secret: '01234567890123456789012345678901',
 };
 
-const originalPublicSessionRoute = process.env.NEXT_PUBLIC_MONDO_SESSION;
+const routeEnvNames = [
+  'NEXT_PUBLIC_MONDO_LOGIN_ROUTE',
+  'NEXT_PUBLIC_MONDO_SESSION_ROUTE',
+  'NEXT_PUBLIC_MONDO_ACCESS_TOKEN_ROUTE',
+  'MONDO_CALLBACK_ROUTE',
+  'MONDO_LOGOUT_ROUTE',
+  'MONDO_SESSION_ROUTE',
+  'MONDO_ACCESS_TOKEN_ROUTE',
+  'MONDO_POST_LOGOUT_REDIRECT_ROUTE',
+] as const;
+const originalRouteEnv = new Map(
+  routeEnvNames.map((name) => [name, process.env[name]]),
+);
 
 describe('getConfig', () => {
   beforeEach(() => {
-    delete process.env.NEXT_PUBLIC_MONDO_SESSION;
+    clearRouteEnv();
   });
 
   afterEach(() => {
-    restorePublicSessionRoute();
+    restoreRouteEnv();
   });
 
   it('validates and normalizes the core configuration', () => {
     const config = getConfig({
       ...validConfig,
-      authorizationParams: {
+      authorization: {
         audience: 'https://api.example.com',
         scope: 'openid profile email offline_access',
       },
@@ -40,7 +52,7 @@ describe('getConfig', () => {
       session: '/auth/session',
       accessToken: '/auth/access-token',
     });
-    expect(config.authorizationParams.audience).toBe('https://api.example.com');
+    expect(config.authorization.audience).toBe('https://api.example.com');
   });
 
   it('allows idle session updates to be disabled when absolute expiry is set', () => {
@@ -57,11 +69,39 @@ describe('getConfig', () => {
   });
 
   it('uses the public session route when no server-only session route is set', () => {
-    process.env.NEXT_PUBLIC_MONDO_SESSION = '/api/session';
+    process.env.NEXT_PUBLIC_MONDO_SESSION_ROUTE = '/api/session';
 
     const config = getConfig(validConfig);
 
     expect(config.routes.session).toBe('/api/session');
+  });
+
+  it('uses the public access-token route when no server-only access-token route is set', () => {
+    process.env.NEXT_PUBLIC_MONDO_ACCESS_TOKEN_ROUTE = '/api/access-token';
+
+    const config = getConfig(validConfig);
+
+    expect(config.routes.accessToken).toBe('/api/access-token');
+  });
+
+  it('reads route overrides from explicit route environment variables', () => {
+    process.env.NEXT_PUBLIC_MONDO_LOGIN_ROUTE = '/api/login';
+    process.env.MONDO_CALLBACK_ROUTE = '/api/callback';
+    process.env.MONDO_LOGOUT_ROUTE = '/api/logout';
+    process.env.MONDO_SESSION_ROUTE = '/api/session/server';
+    process.env.MONDO_ACCESS_TOKEN_ROUTE = '/api/access-token/server';
+    process.env.MONDO_POST_LOGOUT_REDIRECT_ROUTE = '/signed-out';
+
+    const config = getConfig(validConfig);
+
+    expect(config.routes).toMatchObject({
+      login: '/api/login',
+      callback: '/api/callback',
+      logout: '/api/logout',
+      session: '/api/session/server',
+      accessToken: '/api/access-token/server',
+      postLogoutRedirect: '/signed-out',
+    });
   });
 
   it('requires at least one session expiration mode', () => {
@@ -112,7 +152,7 @@ describe('getConfig', () => {
     expect(schema.description).toBe(
       'Validated configuration for @go-mondo/nextjs-auth.',
     );
-    expect(schema.shape.authorizationParams.description).toContain(
+    expect(schema.shape.authorization.description).toContain(
       'Authorization URL parameters',
     );
     expect(schema.shape.routes.description).toBe(
@@ -121,11 +161,20 @@ describe('getConfig', () => {
   });
 });
 
-function restorePublicSessionRoute() {
-  if (originalPublicSessionRoute === undefined) {
-    delete process.env.NEXT_PUBLIC_MONDO_SESSION;
-    return;
+function clearRouteEnv() {
+  for (const name of routeEnvNames) {
+    delete process.env[name];
   }
+}
 
-  process.env.NEXT_PUBLIC_MONDO_SESSION = originalPublicSessionRoute;
+function restoreRouteEnv() {
+  for (const name of routeEnvNames) {
+    const originalValue = originalRouteEnv.get(name);
+
+    if (originalValue === undefined) {
+      delete process.env[name];
+    } else {
+      process.env[name] = originalValue;
+    }
+  }
 }

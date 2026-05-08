@@ -12,8 +12,8 @@ import {
   type AuthorizationCodeParams,
   CodeChallengeMethod,
   type OverrideAuthorizationParams,
-} from '../oidc/types';
-import { discoverOIDC } from '../oidc/discovery';
+} from '../oauth/types';
+import { discoverOIDC } from '../oauth/oidc';
 import { getAuthorizationRedirectURL, toSafeRedirect } from '../http/url';
 
 type AuthorizationParams = OverrideAuthorizationParams;
@@ -22,7 +22,7 @@ export interface LoginOptions {
   /**
    * Override the default authorization parameters for this login request.
    */
-  authorizationParams?: Partial<AuthorizationParams>;
+  authorization?: Partial<AuthorizationParams>;
 
   /**
    * URL to return to after login. Overrides the default in {@link BaseConfig.baseURL}.
@@ -87,8 +87,8 @@ async function handler(
 
   const parameters: AuthorizationCodeParams = {
     redirect_uri: getAuthorizationRedirectURL(config, requestOrigin).toString(),
-    ...config.authorizationParams,
-    ...(options?.authorizationParams || {}),
+    ...config.authorization,
+    ...(options?.authorization || {}),
     nonce: authVerification.nonce,
     state: authVerification.state,
     code_challenge_method: CodeChallengeMethod.S256,
@@ -129,9 +129,7 @@ const buildOptions = (
 
   if (dangerousReturnTo) {
     const safeBaseUrl = new URL(
-      options?.authorizationParams?.redirect_uri ||
-        requestOrigin ||
-        config.baseURL,
+      options?.authorization?.redirect_uri || requestOrigin || config.baseURL,
     );
     options.returnTo = toSafeRedirect(dangerousReturnTo, safeBaseUrl);
   }

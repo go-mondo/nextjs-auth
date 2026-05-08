@@ -3,7 +3,7 @@ import {
   type AccessTokenResult,
   type GetAccessTokenOptions,
   getAccessTokenFactory,
-} from '../oidc/access-token';
+} from '../oauth/access-token';
 import { AccessTokenError, AccessTokenErrorCode } from '../errors/access-token';
 import type { MondoInstance } from '../core/instance';
 import type { Claims } from '../session/types';
@@ -14,6 +14,11 @@ export interface AccessTokenOptions extends GetAccessTokenOptions {
    */
   transform?: (token: AccessTokenResult) => unknown;
 }
+
+type AccessTokenRequestOptions = Pick<
+  GetAccessTokenOptions,
+  'refresh' | 'refreshBeforeExpiresIn' | 'scopes'
+>;
 
 /**
  * Builds a route handler for the configured access-token route.
@@ -29,15 +34,23 @@ export type AccessTokenHandler = (
  * `auth.getAccessToken()` and maps stable access-token error codes to HTTP
  * statuses.
  *
+ * POST requests may provide `refresh`, `refreshBeforeExpiresIn`, and `scopes`
+ * as JSON body options. Omitted body fields keep the static handler options.
+ *
  * @param instance - Validated auth client instance.
  */
 export const accessTokenHandlerFactory =
   <UserClaims extends Claims>(instance: MondoInstance): AccessTokenHandler =>
   (options?: AccessTokenOptions) =>
-  async (_req: Request): Promise<Response> => {
+  async (req: Request): Promise<Response> => {
     try {
-      const token = await getAccessTokenFactory<UserClaims>(instance)(options);
-      return NextResponse.json(options?.transform?.(token) ?? token);
+      const { transform, ...staticOptions } = options ?? {};
+      const requestOptions = await getRequestOptions(req);
+      const token = await getAccessTokenFactory<UserClaims>(instance)({
+        ...staticOptions,
+        ...(requestOptions ?? {}),
+      });
+      return NextResponse.json(transform?.(token) ?? token);
     } catch (error) {
       if (error instanceof AccessTokenError) {
         return NextResponse.json(
@@ -52,6 +65,63 @@ export const accessTokenHandlerFactory =
       throw error;
     }
   };
+
+async function getRequestOptions(
+  req: Request,
+): Promise<AccessTokenRequestOptions | undefined> {
+  if (req.method !== 'POST') {
+    return undefined;
+  }
+
+  const body = await readJsonBody(req);
+  if (!isRecord(body)) {
+    return undefined;
+  }
+
+  const options: AccessTokenRequestOptions = {};
+  const scopes = getScopes(body.scopes);
+
+  if (typeof body.refresh === 'boolean') {
+    options.refresh = body.refresh;
+  }
+
+  if (typeof body.refreshBeforeExpiresIn === 'number') {
+    options.refreshBeforeExpiresIn = body.refreshBeforeExpiresIn;
+  }
+
+  if (scopes) {
+    options.scopes = scopes;
+  }
+
+  return options;
+}
+
+async function readJsonBody(req: Request): Promise<unknown> {
+  try {
+    return await req.json();
+  } catch {
+    return undefined;
+  }
+}
+
+function getScopes(value: unknown): string | Array<string> | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (
+    Array.isArray(value) &&
+    value.every((scope) => typeof scope === 'string')
+  ) {
+    return value;
+  }
+
+  return undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object');
+}
 
 function getStatusCode(code: AccessTokenErrorCode): number {
   switch (code) {

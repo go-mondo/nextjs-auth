@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   sessionStoreFactory: vi.fn(),
 }));
 
-vi.mock('./discovery', () => ({
+vi.mock('./oidc', () => ({
   discoverOIDC: mocks.discoverOIDC,
 }));
 

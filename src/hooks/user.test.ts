@@ -6,11 +6,11 @@ vi.mock('@tanstack/react-query', () => ({
   useQuery: vi.fn((options: unknown) => options),
 }));
 
-const originalPublicSessionRoute = process.env.NEXT_PUBLIC_MONDO_SESSION;
+const originalPublicSessionRoute = process.env.NEXT_PUBLIC_MONDO_SESSION_ROUTE;
 
 describe('fetchUserProfile', () => {
   beforeEach(() => {
-    delete process.env.NEXT_PUBLIC_MONDO_SESSION;
+    delete process.env.NEXT_PUBLIC_MONDO_SESSION_ROUTE;
     vi.mocked(useQuery).mockClear();
   });
 
@@ -95,7 +95,7 @@ describe('fetchUserProfile', () => {
   });
 
   it('uses the configured public session route by default', async () => {
-    process.env.NEXT_PUBLIC_MONDO_SESSION = '/api/session';
+    process.env.NEXT_PUBLIC_MONDO_SESSION_ROUTE = '/api/session';
     mockFetch({
       ok: true,
       status: 200,
@@ -201,9 +201,9 @@ function mockFetch(response: Partial<Response> & { json: () => Promise<any> }) {
 
 function restorePublicSessionRoute() {
   if (originalPublicSessionRoute === undefined) {
-    delete process.env.NEXT_PUBLIC_MONDO_SESSION;
+    delete process.env.NEXT_PUBLIC_MONDO_SESSION_ROUTE;
     return;
   }
 
-  process.env.NEXT_PUBLIC_MONDO_SESSION = originalPublicSessionRoute;
+  process.env.NEXT_PUBLIC_MONDO_SESSION_ROUTE = originalPublicSessionRoute;
 }

@@ -6,7 +6,7 @@ export default defineConfig({
     'src/config.ts',
     'src/errors.ts',
     'src/hooks.ts',
-    'src/oidc.ts',
+    'src/oauth.ts',
     'src/session.ts',
   ],
   format: ['esm', 'cjs'],

@@ -26,7 +26,7 @@ vi.mock('../session/model', () => ({
   fromTokenEndpointResponse: mocks.fromTokenEndpointResponse,
 }));
 
-vi.mock('../oidc/discovery', () => ({
+vi.mock('../oauth/oidc', () => ({
   discoverOIDC: mocks.discoverOIDC,
 }));
 

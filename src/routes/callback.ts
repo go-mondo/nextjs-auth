@@ -15,7 +15,7 @@ import {
   type TransactionStore,
   transactionStoreFactory,
 } from '../transactions/store';
-import { discoverOIDC } from '../oidc/discovery';
+import { discoverOIDC } from '../oauth/oidc';
 
 export interface CallbackOptions {
   /**

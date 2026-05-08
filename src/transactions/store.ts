@@ -3,7 +3,7 @@ import { getIronSession, type IronSession } from 'iron-session';
 import type { Config } from '../config/types';
 import { getSecrets, type Secrets } from '../crypto/secrets';
 import type { CookieStore } from '../http/cookies';
-import type { AuthorizationCodeParams } from '../oidc/types';
+import type { AuthorizationCodeParams } from '../oauth/types';
 
 export type AuthVerification = Pick<
   AuthorizationCodeParams,

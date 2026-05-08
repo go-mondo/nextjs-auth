@@ -1,14 +1,14 @@
 /**
- * Public OIDC types.
+ * Public OAuth types.
  */
 export type {
   AccessTokenResult,
   GetAccessToken,
   GetAccessTokenOptions,
-} from './oidc/access-token';
-export { CodeChallengeMethod } from './oidc/types';
+} from './oauth/access-token';
+export { CodeChallengeMethod } from './oauth/types';
 export type {
   AuthorizationCodeParams,
   OverrideAuthorizationParams,
   TokenEndpointResponse,
-} from './oidc/types';
+} from './oauth/types';

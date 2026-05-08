@@ -14,7 +14,7 @@ export type Config = z.output<typeof schema>;
 export type PartialConfig = DeepPartial<z.input<typeof schema>>;
 
 /** Authorization URL parameters after validation and defaults. */
-export type AuthorizationParams = Config['authorizationParams'];
+export type AuthorizationConfig = Config['authorization'];
 
 /** Session configuration after validation and defaults. */
 export type SessionConfig = Config['session'];

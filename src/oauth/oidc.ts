@@ -1,4 +1,4 @@
-import type * as oidc from 'openid-client';
+import * as oidc from 'openid-client';
 import type { Config } from '../config/types';
 
 /**
@@ -13,8 +13,6 @@ import type { Config } from '../config/types';
 export async function discoverOIDC(
   config: Config,
 ): Promise<oidc.Configuration> {
-  const oidc = await import('openid-client');
-
   const isLocalDevelopment =
     config.issuerBaseURL.includes('localhost') ||
     config.issuerBaseURL.includes('127.0.0.1');

@@ -74,7 +74,7 @@ const SessionSchema = z
 
 const Schema = z
   .object({
-    authorizationParams: z
+    authorization: z
       .object({
         response_type: z
           .enum(['code'])
