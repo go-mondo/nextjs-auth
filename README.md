@@ -305,6 +305,32 @@ When `scopes`, `refresh`, or `refreshBeforeExpiresIn` are provided, the hook
 POSTs those options to `/auth/access-token`. The authorization server validates
 whether requested scopes are allowed for the stored refresh token.
 
+For imperative browser API clients, use `createAccessTokenProvider` so repeated
+API calls do not hit `/auth/access-token` before every request. The cache is
+memory-only, expires entries from the returned `expiresAt` value, and shares one
+in-flight token request across concurrent callers.
+
+```ts
+// src/lib/api.ts
+import { createAccessTokenProvider } from '@go-mondo/nextjs-auth/hooks';
+
+const tokens = createAccessTokenProvider({
+  scopes: ['reports:read'],
+});
+
+export async function apiFetch(input: RequestInfo | URL, init?: RequestInit) {
+  const { accessToken } = await tokens.getAccessToken();
+  const headers = new Headers(init?.headers);
+
+  headers.set('authorization', `Bearer ${accessToken}`);
+
+  return fetch(input, {
+    ...init,
+    headers,
+  });
+}
+```
+
 ## Custom Configuration
 
 You can configure the client in code instead of relying only on environment
