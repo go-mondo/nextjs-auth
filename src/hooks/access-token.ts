@@ -26,6 +26,30 @@ export type FetchAccessTokenOptions = GetAccessTokenOptions & {
 };
 
 /**
+ * Access-token provider for imperative browser API clients.
+ */
+export type AccessTokenProvider = {
+  /**
+   * Returns a cached access token when it is still fresh, otherwise calls the
+   * mounted access-token route and stores the result.
+   */
+  getAccessToken: (
+    options?: FetchAccessTokenOptions,
+  ) => Promise<AccessTokenResult>;
+
+  /**
+   * Clears the cached entry for the provided route and scopes. Clears every
+   * cached entry when no options are provided.
+   */
+  clear: (options?: Pick<FetchAccessTokenOptions, 'route' | 'scopes'>) => void;
+
+  /**
+   * Clears every cached entry.
+   */
+  clearAll: () => void;
+};
+
+/**
  * Default TanStack Query key used by {@link useAccessToken}.
  */
 export type UseAccessTokenQueryKey = readonly [
@@ -98,6 +122,83 @@ export async function fetchAccessToken(
 }
 
 /**
+ * Creates an in-memory access-token cache for imperative browser API clients.
+ *
+ * This is useful when an app needs to make multiple browser-side API calls with
+ * a bearer token. Cached tokens are kept only in memory, are refreshed before
+ * expiry, and concurrent misses share one `/auth/access-token` request.
+ */
+export function createAccessTokenProvider(
+  defaultOptions: FetchAccessTokenOptions = {},
+): AccessTokenProvider {
+  const entries = new Map<string, AccessTokenCacheEntry>();
+
+  const loadAccessToken = async (options: FetchAccessTokenOptions) => {
+    const key = getAccessTokenCacheKey(options);
+    let promise: Promise<AccessTokenResult>;
+
+    promise = fetchAccessToken(options).then(
+      (token) => {
+        entries.set(key, { token });
+        return token;
+      },
+      (error) => {
+        if (entries.get(key)?.promise === promise) {
+          entries.delete(key);
+        }
+
+        throw error;
+      },
+    );
+
+    entries.set(key, { promise });
+    return promise;
+  };
+
+  return {
+    getAccessToken(options = {}) {
+      const mergedOptions = mergeFetchAccessTokenOptions(
+        defaultOptions,
+        options,
+      );
+      const key = getAccessTokenCacheKey(mergedOptions);
+      const entry = entries.get(key);
+
+      if (
+        mergedOptions.refresh !== true &&
+        entry?.token &&
+        canUseCachedAccessToken(entry.token, mergedOptions)
+      ) {
+        return Promise.resolve(entry.token);
+      }
+
+      if (mergedOptions.refresh !== true && entry?.promise) {
+        return entry.promise;
+      }
+
+      return loadAccessToken(mergedOptions);
+    },
+
+    clear(options) {
+      if (!options) {
+        entries.clear();
+        return;
+      }
+
+      entries.delete(
+        getAccessTokenCacheKey(
+          mergeFetchAccessTokenOptions(defaultOptions, options),
+        ),
+      );
+    },
+
+    clearAll() {
+      entries.clear();
+    },
+  };
+}
+
+/**
  * TanStack Query hook for a current access token.
  *
  * Apps must provide a `QueryClientProvider` above this hook. The hook calls the
@@ -152,6 +253,72 @@ function getRequestBody(options: GetAccessTokenOptions) {
   }
 
   return options;
+}
+
+type AccessTokenCacheEntry = {
+  token?: AccessTokenResult;
+  promise?: Promise<AccessTokenResult>;
+};
+
+function mergeFetchAccessTokenOptions(
+  defaultOptions: FetchAccessTokenOptions,
+  options: FetchAccessTokenOptions,
+): FetchAccessTokenOptions {
+  const request = mergeRequestInit(defaultOptions.request, options.request);
+
+  return {
+    ...defaultOptions,
+    ...options,
+    request,
+  };
+}
+
+function mergeRequestInit(
+  defaultRequest: RequestInit | undefined,
+  request: RequestInit | undefined,
+): RequestInit | undefined {
+  if (!defaultRequest && !request) {
+    return undefined;
+  }
+
+  return {
+    ...defaultRequest,
+    ...request,
+    headers: mergeHeaders(defaultRequest?.headers, request?.headers),
+  };
+}
+
+function mergeHeaders(
+  defaultHeaders: HeadersInit | undefined,
+  headers: HeadersInit | undefined,
+): Headers | undefined {
+  if (!defaultHeaders && !headers) {
+    return undefined;
+  }
+
+  const mergedHeaders = new Headers(defaultHeaders);
+  new Headers(headers).forEach((value, key) => {
+    mergedHeaders.set(key, value);
+  });
+
+  return mergedHeaders;
+}
+
+function canUseCachedAccessToken(
+  token: AccessTokenResult,
+  options: GetAccessTokenOptions,
+): boolean {
+  const skew = options.refreshBeforeExpiresIn ?? 60;
+  return token.expiresAt > Math.floor(Date.now() / 1000) + skew;
+}
+
+function getAccessTokenCacheKey(
+  options: Pick<FetchAccessTokenOptions, 'route' | 'scopes'>,
+) {
+  return JSON.stringify([
+    options.route ?? getPublicAccessTokenRoute(),
+    normalizeScopes(options.scopes),
+  ]);
 }
 
 async function getErrorMessage(response: Response): Promise<string> {
