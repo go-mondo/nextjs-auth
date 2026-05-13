@@ -64,23 +64,26 @@ export type ProxyOptions = {
  * @typeParam UserClaims - App-specific claims expected on `session.user`.
  */
 export class MondoAuthClient<UserClaims extends Claims = Claims> {
-  private readonly instance: MondoInstance;
+  private instance?: MondoInstance;
+  private readonly configOverrides?: PartialConfig;
 
   /**
-   * Creates a client and validates configuration immediately.
+   * Creates a client. Configuration is validated lazily the first time it is
+   * needed so importing the client is safe before Next.js loads environment
+   * files.
    *
    * @param config - Optional explicit config. Environment variables provide the
    * remaining values.
    */
   constructor(config?: PartialConfig) {
-    this.instance = initInstance(config);
+    this.configOverrides = config;
   }
 
   /**
    * Validated auth configuration used by this client.
    */
   get config() {
-    return this.instance.config;
+    return this.getInstance().config;
   }
 
   /**
@@ -128,35 +131,35 @@ export class MondoAuthClient<UserClaims extends Claims = Claims> {
    * Creates a route handler that starts the OIDC login redirect.
    */
   handleLogin(options?: LoginOptions) {
-    return loginHandlerFactory(this.instance)(options);
+    return loginHandlerFactory(this.getInstance())(options);
   }
 
   /**
    * Creates a route handler that completes the OIDC callback.
    */
   handleCallback(options?: CallbackOptions) {
-    return callbackHandlerFactory<UserClaims>(this.instance)(options);
+    return callbackHandlerFactory<UserClaims>(this.getInstance())(options);
   }
 
   /**
    * Creates a route handler that clears the local session.
    */
   handleLogout(options?: LogoutOptions) {
-    return logoutHandlerFactory<UserClaims>(this.instance)(options);
+    return logoutHandlerFactory<UserClaims>(this.getInstance())(options);
   }
 
   /**
    * Creates a route handler that returns the current session as JSON.
    */
   handleSession(options?: SessionOptions<UserClaims>) {
-    return sessionHandlerFactory<UserClaims>(this.instance)(options);
+    return sessionHandlerFactory<UserClaims>(this.getInstance())(options);
   }
 
   /**
    * Creates a route handler that returns or refreshes the current access token.
    */
   handleAccessToken(options?: AccessTokenOptions) {
-    return accessTokenHandlerFactory<UserClaims>(this.instance)(options);
+    return accessTokenHandlerFactory<UserClaims>(this.getInstance())(options);
   }
 
   /**
@@ -171,7 +174,7 @@ export class MondoAuthClient<UserClaims extends Claims = Claims> {
    * when the token is expired or missing required scopes.
    */
   getAccessToken = (options?: GetAccessTokenOptions) => {
-    return getAccessTokenFactory<UserClaims>(this.instance)(options);
+    return getAccessTokenFactory<UserClaims>(this.getInstance())(options);
   };
 
   /**
@@ -217,6 +220,11 @@ export class MondoAuthClient<UserClaims extends Claims = Claims> {
     await sessionStore.touch();
     return response;
   };
+
+  private getInstance(): MondoInstance {
+    this.instance ??= initInstance(this.configOverrides);
+    return this.instance;
+  }
 }
 
 /**

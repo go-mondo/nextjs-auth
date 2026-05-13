@@ -18,8 +18,11 @@ describe('MondoAuthClient', () => {
     vi.clearAllMocks();
   });
 
-  it('validates configuration eagerly', () => {
-    expect(() => createAuth()).toThrow(
+  it('defers configuration validation until config is used', () => {
+    const auth = createAuth();
+
+    expect(() => auth.handleAuth()).not.toThrow();
+    expect(() => auth.config).toThrow(
       'Invalid @go-mondo/nextjs-auth configuration',
     );
   });
