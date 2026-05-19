@@ -5,6 +5,7 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 import { getPublicAccessTokenRoute } from '../config/routes';
+import { FetchAccessTokenError } from '../errors/client';
 import type {
   AccessTokenResult,
   GetAccessTokenOptions,
@@ -114,8 +115,9 @@ export async function fetchAccessToken(
   });
 
   if (!response.ok) {
-    const message = await getErrorMessage(response);
-    throw new Error(message);
+    const { status, rawError, message } =
+      await getFetchAccessTokenErrorDetails(response);
+    throw new FetchAccessTokenError(status, rawError, message);
   }
 
   return (await response.json()) as AccessTokenResult;
@@ -321,16 +323,22 @@ function getAccessTokenCacheKey(
   ]);
 }
 
-async function getErrorMessage(response: Response): Promise<string> {
+async function getFetchAccessTokenErrorDetails(
+  response: Response,
+): Promise<{ status: number; rawError: string | undefined; message: string }> {
   const payload = (await readJson(response)) as
-    | { error_description?: unknown }
+    | { error?: unknown; error_description?: unknown }
     | undefined;
 
-  if (typeof payload?.error_description === 'string') {
-    return payload.error_description;
-  }
+  const rawError =
+    typeof payload?.error === 'string' ? payload.error : undefined;
 
-  return `Unable to load an access token (${response.status}).`;
+  const message =
+    typeof payload?.error_description === 'string'
+      ? payload.error_description
+      : `Unable to load an access token (${response.status}).`;
+
+  return { status: response.status, rawError, message };
 }
 
 async function readJson(response: Response): Promise<unknown> {

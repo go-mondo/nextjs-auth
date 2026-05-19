@@ -331,6 +331,42 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit) {
 }
 ```
 
+When the access-token route returns a non-2xx response, `fetchAccessToken` throws
+a typed `FetchAccessTokenError` that app code can distinguish with `instanceof`:
+
+```ts
+// src/lib/api.ts
+import {
+  fetchAccessToken,
+  FetchAccessTokenError,
+  redirectToLogin,
+} from '@go-mondo/nextjs-auth/hooks';
+
+export async function apiFetch(input: RequestInfo | URL, init?: RequestInit) {
+  let token;
+
+  try {
+    const result = await fetchAccessToken();
+    token = result.accessToken;
+  } catch (error) {
+    if (error instanceof FetchAccessTokenError) {
+      // Refresh failed or session expired; start a fresh login.
+      await redirectToLogin();
+      // Note: the browser navigates away, so this code does not execute.
+    }
+    throw error;
+  }
+
+  const headers = new Headers(init?.headers);
+  headers.set('authorization', `Bearer ${token}`);
+
+  return fetch(input, {
+    ...init,
+    headers,
+  });
+}
+```
+
 ## Custom Configuration
 
 You can configure the client in code instead of relying only on environment
