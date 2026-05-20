@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/go-mondo/nextjs-auth/compare/v0.2.1...v0.3.0) (2026-05-20)
+
+
+### Features
+
+* add browser login redirect helpers and typed fetch errors ([006cc16](https://github.com/go-mondo/nextjs-auth/commit/006cc16b96f2620a41114139dbb757fcf8918045))
+* add browser login redirect helpers and typed fetch errors ([150063b](https://github.com/go-mondo/nextjs-auth/commit/150063b8342cc10de0671b14301e84bcd0b255b7))
+
 ## [0.2.1](https://github.com/go-mondo/nextjs-auth/compare/v0.2.0...v0.2.1) (2026-05-13)
 
 
