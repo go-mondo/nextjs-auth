@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { FetchAccessTokenError } from '../errors/client';
 import {
   createAccessTokenProvider,
   fetchAccessToken,
@@ -106,31 +107,70 @@ describe('fetchAccessToken', () => {
     expect(init.method).toBe('POST');
   });
 
-  it('throws readable access-token errors', async () => {
-    mockFetch({
-      ok: false,
-      status: 401,
-      json: async () => ({
-        error: 'ERR_MISSING_SESSION',
-        error_description: 'A session is required.',
-      }),
-    });
+  it('throws a typed FetchAccessTokenError with code, status, and message', async () => {
+    mockFetch(
+      {
+        ok: false,
+        status: 401,
+        json: async () => ({
+          error: 'ERR_MISSING_SESSION',
+          error_description: 'A session is required.',
+        }),
+      },
+      {
+        ok: false,
+        status: 401,
+        json: async () => ({
+          error: 'ERR_MISSING_SESSION',
+          error_description: 'A session is required.',
+        }),
+      },
+    );
 
     await expect(fetchAccessToken()).rejects.toThrow('A session is required.');
+
+    try {
+      await fetchAccessToken();
+    } catch (error) {
+      expect(error).toBeInstanceOf(FetchAccessTokenError);
+      expect(error).toBeInstanceOf(Error);
+      const fetchError = error as FetchAccessTokenError;
+      expect(fetchError.status).toBe(401);
+      expect(fetchError.rawError).toBe('ERR_MISSING_SESSION');
+      expect(fetchError.code).toBe('ERR_FETCH_ACCESS_TOKEN_FAILED');
+    }
   });
 
-  it('throws a fallback error when the route returns an unexpected error body', async () => {
-    mockFetch({
-      ok: false,
-      status: 500,
-      json: async () => {
-        throw new Error('bad json');
+  it('throws a typed FetchAccessTokenError with a fallback message when the route returns an unexpected error body', async () => {
+    mockFetch(
+      {
+        ok: false,
+        status: 500,
+        json: async () => {
+          throw new Error('bad json');
+        },
       },
-    });
+      {
+        ok: false,
+        status: 500,
+        json: async () => {
+          throw new Error('bad json');
+        },
+      },
+    );
 
     await expect(fetchAccessToken()).rejects.toThrow(
       'Unable to load an access token (500).',
     );
+
+    try {
+      await fetchAccessToken();
+    } catch (error) {
+      expect(error).toBeInstanceOf(FetchAccessTokenError);
+      const fetchError = error as FetchAccessTokenError;
+      expect(fetchError.status).toBe(500);
+      expect(fetchError.rawError).toBeUndefined();
+    }
   });
 
   it('configures TanStack Query for access-token fetching', async () => {

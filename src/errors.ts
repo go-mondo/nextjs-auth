@@ -16,3 +16,7 @@ export {
   MissingStateCookieError,
   MissingStateParamError,
 } from './errors/state';
+export {
+  FetchAccessTokenError,
+  FetchAccessTokenErrorCode,
+} from './errors/client';

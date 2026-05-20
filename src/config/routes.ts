@@ -34,3 +34,15 @@ export function getPublicAccessTokenRoute(): string {
     ? DEFAULT_ROUTES.accessToken
     : process.env.NEXT_PUBLIC_ACCESS_TOKEN_ROUTE || DEFAULT_ROUTES.accessToken;
 }
+
+/**
+ * Returns the login route that browser code can safely call.
+ *
+ * The full server configuration may read secret-bearing environment variables,
+ * so client hooks use the public login route override instead.
+ */
+export function getPublicLoginRoute(): string {
+  return typeof process === 'undefined'
+    ? DEFAULT_ROUTES.login
+    : process.env.NEXT_PUBLIC_LOGIN_ROUTE || DEFAULT_ROUTES.login;
+}
