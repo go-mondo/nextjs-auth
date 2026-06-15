@@ -55,10 +55,11 @@ export const callbackHandlerFactory =
   async (req: Request): Promise<Response> => {
     try {
       const cookieStore = await cookieFactory();
+      const requestUrl = await getCallbackRequestUrl(req);
 
       return await handler<UserClaims>(
         instance,
-        new URL(req.url),
+        requestUrl,
         transactionStoreFactory(instance.config, cookieStore),
         sessionStoreFactory<UserClaims>(instance.config),
         options,
@@ -75,6 +76,28 @@ export const callbackHandlerFactory =
       throw new CallbackHandlerError(e as HandlerErrorCause);
     }
   };
+
+async function getCallbackRequestUrl(req: Request): Promise<URL> {
+  const requestUrl = new URL(req.url);
+  const contentType = req.headers.get('content-type')?.toLowerCase() || '';
+
+  if (
+    req.method.toUpperCase() !== 'POST' ||
+    !contentType.includes('application/x-www-form-urlencoded')
+  ) {
+    return requestUrl;
+  }
+
+  const form = await req.formData();
+
+  for (const [key, value] of form) {
+    if (typeof value === 'string') {
+      requestUrl.searchParams.set(key, value);
+    }
+  }
+
+  return requestUrl;
+}
 
 async function handler<UserClaims extends Claims>(
   { config }: MondoInstance,

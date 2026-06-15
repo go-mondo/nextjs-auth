@@ -175,6 +175,43 @@ describe('callbackHandlerFactory', () => {
     );
   });
 
+  it('handles form_post authorization errors', async () => {
+    const transactionStore = {
+      read: vi.fn().mockResolvedValue({
+        code_verifier: 'verifier',
+        nonce: 'nonce',
+        state: 'state',
+      }),
+    };
+    const sessionStore = { set: vi.fn() };
+    mocks.transactionStoreFactory.mockReturnValue(transactionStore);
+    mocks.sessionStoreFactory.mockReturnValue(sessionStore);
+
+    const response = await handler(undefined, {
+      routes: { authorizationError: '/auth/denied' },
+    })(
+      new Request('https://app.example.com/auth/callback', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          error: 'access_denied',
+          error_description: 'The resource owner denied the request.',
+          state: 'state',
+        }),
+      }),
+    );
+
+    expect(mocks.discoverOIDC).not.toHaveBeenCalled();
+    expect(mocks.authorizationCodeGrant).not.toHaveBeenCalled();
+    expect(sessionStore.set).not.toHaveBeenCalled();
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(
+      'https://app.example.com/auth/denied?error=access_denied',
+    );
+  });
+
   it('escapes provider error descriptions before displaying them', async () => {
     mocks.transactionStoreFactory.mockReturnValue({
       read: vi.fn().mockResolvedValue({

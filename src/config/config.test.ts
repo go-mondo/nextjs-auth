@@ -179,6 +179,21 @@ describe('getConfig', () => {
     ).toThrow('- routes.callback: Must not contain "//".');
   });
 
+  it('rejects error routes that match built-in auth routes', () => {
+    expect(() =>
+      getConfig({
+        ...validConfig,
+        routes: {
+          authorizationError: '/auth/callback',
+          loginError: '/auth/login',
+          callbackError: '/auth/access-token',
+        },
+      }),
+    ).toThrow(
+      '- routes.authorizationError: Must not match a built-in auth route.',
+    );
+  });
+
   it('describes the schema for generated docs and debugging', () => {
     expect(schema.description).toBe(
       'Validated configuration for @go-mondo/nextjs-auth.',

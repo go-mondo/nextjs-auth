@@ -181,6 +181,30 @@ const Schema = z
           'Application path to redirect to after logout.',
         ),
       })
+      .superRefine((routes, ctx) => {
+        const authRoutes = new Set([
+          routes.login,
+          routes.callback,
+          routes.logout,
+          routes.session,
+          routes.accessToken,
+        ]);
+
+        for (const routeName of [
+          'authorizationError',
+          'loginError',
+          'callbackError',
+        ] as const) {
+          const route = routes[routeName];
+          if (route && authRoutes.has(route)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: 'Must not match a built-in auth route.',
+              path: [routeName],
+            });
+          }
+        }
+      })
       .describe('Application routes mounted by the auth client.'),
     transaction: z
       .object({
