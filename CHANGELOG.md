@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### ⚠ BREAKING CHANGES
+
+* harden default cookie names with the `__Host-` prefix. The default session
+  cookies are now `__Host-Mondo.Session`, `__Host-Mondo.Authorization`, and
+  `__Host-Mondo.Authentication`; the login transaction cookie is now
+  `__Host-Mondo.Verification`. Existing users will be signed out because the SDK
+  no longer reads the old `Mondo.*` cookie names.
+* `__Host-` cookies must be secure, host-only cookies with `Path=/`. Apps using
+  domain-scoped cookies or insecure plain-HTTP development hostnames must
+  configure non-`__Host-` cookie names for those environments.
+
 ## [0.3.0](https://github.com/go-mondo/nextjs-auth/compare/v0.2.1...v0.3.0) (2026-05-20)
 
 
