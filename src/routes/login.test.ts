@@ -142,10 +142,26 @@ describe('loginHandlerFactory', () => {
       }),
     );
   });
+
+  it('redirects login handler failures to the configured error route', async () => {
+    const transactionStore = { save: vi.fn() };
+    mocks.transactionStoreFactory.mockReturnValue(transactionStore);
+    mocks.discoverOIDC.mockRejectedValue(new Error('Invalid audience.'));
+
+    const response = await handler(undefined, {
+      routes: { loginError: '/auth/login-problem' },
+    })(new Request('https://app.example.com/auth/login'));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(
+      'https://app.example.com/auth/login-problem?error=login_error',
+    );
+  });
 });
 
 function handler(
   options?: Parameters<ReturnType<typeof loginHandlerFactory>>[0],
+  config?: Parameters<typeof createTestConfig>[0],
 ) {
-  return loginHandlerFactory({ config: createTestConfig() })(options);
+  return loginHandlerFactory({ config: createTestConfig(config) })(options);
 }

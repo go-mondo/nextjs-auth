@@ -20,6 +20,7 @@ import {
   type TransactionStore,
   transactionStoreFactory,
 } from '../transactions/store';
+import { redirectToErrorRoute } from './error-route';
 
 export interface CallbackOptions {
   /**
@@ -63,6 +64,14 @@ export const callbackHandlerFactory =
         options,
       );
     } catch (e) {
+      if (instance.config.routes.callbackError) {
+        return redirectToErrorRoute(
+          instance.config,
+          instance.config.routes.callbackError,
+          'callback_error',
+        );
+      }
+
       throw new CallbackHandlerError(e as HandlerErrorCause);
     }
   };
@@ -83,6 +92,13 @@ async function handler<UserClaims extends Claims>(
   const authorizationError = getAuthorizationError(requestUrl);
   if (authorizationError) {
     verifyState(requestUrl, authVerification.state);
+    if (config.routes.authorizationError) {
+      return redirectToErrorRoute(
+        config,
+        config.routes.authorizationError,
+        authorizationError.error,
+      );
+    }
     return authorizationErrorResponse(authorizationError);
   }
 
@@ -144,9 +160,14 @@ function authorizationErrorResponse({
 }: AuthorizationErrorResponse): Response {
   const message =
     error === 'access_denied'
-      ? 'Access was not granted. You can close this page and try signing in again.'
-      : 'The authorization request could not be completed.';
-  const detail = error_description || error;
+      ? 'You did not grant permission to continue. You can close this page and try again when you are ready.'
+      : 'We could not finish the authorization request. Please close this page and try again.';
+  const title =
+    error === 'access_denied'
+      ? 'Sign-in was not completed'
+      : 'Sign-in could not be completed';
+  const detail =
+    error === 'access_denied' ? undefined : error_description || error;
   const popupScript =
     error === 'access_denied'
       ? authorizationErrorPopupScript({ error, error_description })
@@ -158,13 +179,13 @@ function authorizationErrorResponse({
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Authorization was not completed</title>
+    <title>${escapeHtml(title)}</title>
   </head>
   <body>
     <main>
-      <h1>Authorization was not completed</h1>
+      <h1>${escapeHtml(title)}</h1>
       <p>${escapeHtml(message)}</p>
-      <p>${escapeHtml(detail)}</p>
+      ${detail ? `<p>${escapeHtml(detail)}</p>` : ''}
     </main>
     ${popupScript}
   </body>

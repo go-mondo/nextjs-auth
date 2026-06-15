@@ -136,11 +136,43 @@ describe('callbackHandlerFactory', () => {
       'text/html; charset=utf-8',
     );
     const body = await response.text();
-    expect(body).toContain('Access was not granted.');
+    expect(body).toContain('Sign-in was not completed');
+    expect(body).toContain('You did not grant permission to continue.');
+    expect(body).not.toContain('<p>The resource owner denied the request.</p>');
     expect(body).toContain('window.opener');
     expect(body).toContain('window.opener.postMessage');
     expect(body).toContain('"type":"mondo-auth:authorization-error"');
     expect(body).toContain('window.close()');
+  });
+
+  it('redirects verified authorization errors to the configured error route', async () => {
+    const transactionStore = {
+      read: vi.fn().mockResolvedValue({
+        code_verifier: 'verifier',
+        nonce: 'nonce',
+        state: 'state',
+      }),
+    };
+    const sessionStore = { set: vi.fn() };
+    mocks.transactionStoreFactory.mockReturnValue(transactionStore);
+    mocks.sessionStoreFactory.mockReturnValue(sessionStore);
+
+    const response = await handler(undefined, {
+      routes: { authorizationError: '/auth/denied' },
+    })(
+      new Request(
+        'https://app.example.com/auth/callback?error=access_denied&error_description=The+resource+owner+denied+the+request.&state=state',
+      ),
+    );
+
+    expect(transactionStore.read).toHaveBeenCalledWith();
+    expect(mocks.discoverOIDC).not.toHaveBeenCalled();
+    expect(mocks.authorizationCodeGrant).not.toHaveBeenCalled();
+    expect(sessionStore.set).not.toHaveBeenCalled();
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(
+      'https://app.example.com/auth/denied?error=access_denied',
+    );
   });
 
   it('escapes provider error descriptions before displaying them', async () => {
@@ -182,7 +214,7 @@ describe('callbackHandlerFactory', () => {
     );
 
     const body = await response.text();
-    expect(body).toContain(
+    expect(body).not.toContain(
       '&lt;/script&gt;&lt;script&gt;alert(1)&lt;/script&gt;',
     );
     expect(body).toContain('\\u003c/script\\u003e');
@@ -214,6 +246,24 @@ describe('callbackHandlerFactory', () => {
     });
   });
 
+  it('redirects callback handler failures to the configured error route', async () => {
+    mocks.transactionStoreFactory.mockReturnValue({
+      read: vi.fn().mockResolvedValue(undefined),
+    });
+    mocks.sessionStoreFactory.mockReturnValue({ set: vi.fn() });
+
+    const response = await handler(undefined, {
+      routes: { callbackError: '/auth/callback-problem' },
+    })(
+      new Request('https://app.example.com/auth/callback?code=abc&state=state'),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(
+      'https://app.example.com/auth/callback-problem?error=callback_error',
+    );
+  });
+
   it('wraps missing transaction state as a callback handler error', async () => {
     mocks.transactionStoreFactory.mockReturnValue({
       read: vi.fn().mockResolvedValue(undefined),
@@ -237,6 +287,7 @@ describe('callbackHandlerFactory', () => {
 
 function handler(
   options?: Parameters<ReturnType<typeof callbackHandlerFactory>>[0],
+  config?: Parameters<typeof createTestConfig>[0],
 ) {
-  return callbackHandlerFactory({ config: createTestConfig() })(options);
+  return callbackHandlerFactory({ config: createTestConfig(config) })(options);
 }

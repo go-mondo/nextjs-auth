@@ -168,6 +168,15 @@ const Schema = z
         accessToken: RelativePathSchema.default('/auth/access-token').describe(
           'Route that returns or refreshes the current access token.',
         ),
+        authorizationError: RelativePathSchema.optional().describe(
+          'Optional application route shown after a verified authorization error, such as denied consent.',
+        ),
+        loginError: RelativePathSchema.optional().describe(
+          'Optional application route shown after the login route fails before redirecting to the identity provider.',
+        ),
+        callbackError: RelativePathSchema.optional().describe(
+          'Optional application route shown after the callback route fails outside a verified provider authorization error.',
+        ),
         postLogoutRedirect: RelativePathSchema.default('/').describe(
           'Application path to redirect to after logout.',
         ),

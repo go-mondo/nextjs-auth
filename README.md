@@ -47,6 +47,9 @@ CALLBACK_ROUTE="/auth/callback"
 LOGOUT_ROUTE="/auth/logout"
 SESSION_ROUTE="/auth/session"
 ACCESS_TOKEN_ROUTE="/auth/access-token"
+AUTHORIZATION_ERROR_ROUTE="/auth/denied"
+LOGIN_ERROR_ROUTE="/auth/login-error"
+CALLBACK_ERROR_ROUTE="/auth/callback-error"
 POST_LOGOUT_REDIRECT_ROUTE="/"
 
 MONDO_SESSION_IDLE_DURATION="86400"
@@ -389,6 +392,11 @@ export const auth = createAuth({
     audience: 'https://api.example.com',
     scope: 'openid profile email offline_access reports:read',
   },
+  routes: {
+    authorizationError: '/auth/denied',
+    loginError: '/auth/login-error',
+    callbackError: '/auth/callback-error',
+  },
   session: {
     idleDuration: 60 * 60 * 24,
     absoluteDuration: 60 * 60 * 24 * 7,
@@ -433,6 +441,14 @@ By default, `auth.handleAuth()` handles:
 - `/auth/logout`: clears the local application session.
 - `/auth/session`: returns the current session as JSON.
 - `/auth/access-token`: returns or refreshes the current access token.
+
+Set `routes.authorizationError` or `AUTHORIZATION_ERROR_ROUTE` to redirect
+verified provider authorization errors, including denied consent, to an
+application-owned page. Set `routes.loginError` or `LOGIN_ERROR_ROUTE` for
+login route failures, and `routes.callbackError` or `CALLBACK_ERROR_ROUTE` for
+callback handler failures. When unset, the callback route returns a small
+built-in HTML response for provider authorization errors and handler failures
+throw as SDK errors.
 
 ## Session Cookies
 
