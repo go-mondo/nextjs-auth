@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server.js';
 import type * as oidc from 'openid-client';
-import { cookieFactory } from '../http/cookies';
+import type { MondoInstance } from '../core/instance';
 import {
   CallbackHandlerError,
   type HandlerErrorCause,
 } from '../errors/handlers';
-import { MissingStateCookieError } from '../errors/state';
-import type { MondoInstance } from '../core/instance';
+import {
+  MismatchedStateParamError,
+  MissingStateCookieError,
+  MissingStateParamError,
+} from '../errors/state';
+import { cookieFactory } from '../http/cookies';
+import { discoverOIDC } from '../oauth/oidc';
 import { fromTokenEndpointResponse } from '../session/model';
 import { sessionStoreFactory } from '../session/stores/stateless-store';
 import type { SessionStoreInterface } from '../session/stores/types';
@@ -15,7 +20,6 @@ import {
   type TransactionStore,
   transactionStoreFactory,
 } from '../transactions/store';
-import { discoverOIDC } from '../oauth/oidc';
 
 export interface CallbackOptions {
   /**
@@ -23,6 +27,11 @@ export interface CallbackOptions {
    */
   tokenParameters?: URLSearchParams | Record<string, string>;
 }
+
+type AuthorizationErrorResponse = {
+  error: string;
+  error_description?: string;
+};
 
 /**
  * Builds a route handler for the configured callback route.
@@ -71,6 +80,12 @@ async function handler<UserClaims extends Claims>(
     throw new MissingStateCookieError();
   }
 
+  const authorizationError = getAuthorizationError(requestUrl);
+  if (authorizationError) {
+    verifyState(requestUrl, authVerification.state);
+    return authorizationErrorResponse(authorizationError);
+  }
+
   const clientConfig = await discoverOIDC(config);
 
   const tokens: oidc.TokenEndpointResponse = await oidc.authorizationCodeGrant(
@@ -92,4 +107,111 @@ async function handler<UserClaims extends Claims>(
   }
 
   return NextResponse.redirect(authVerification.return_to || config.baseURL);
+}
+
+function getAuthorizationError(
+  requestUrl: URL,
+): AuthorizationErrorResponse | undefined {
+  const error = requestUrl.searchParams.get('error');
+
+  if (!error) {
+    return undefined;
+  }
+
+  const errorDescription = requestUrl.searchParams.get('error_description');
+
+  return {
+    error,
+    ...(errorDescription ? { error_description: errorDescription } : {}),
+  };
+}
+
+function verifyState(requestUrl: URL, expectedState: string): void {
+  const state = requestUrl.searchParams.get('state');
+
+  if (!state) {
+    throw new MissingStateParamError();
+  }
+
+  if (state !== expectedState) {
+    throw new MismatchedStateParamError();
+  }
+}
+
+function authorizationErrorResponse({
+  error,
+  error_description,
+}: AuthorizationErrorResponse): Response {
+  const message =
+    error === 'access_denied'
+      ? 'Access was not granted. You can close this page and try signing in again.'
+      : 'The authorization request could not be completed.';
+  const detail = error_description || error;
+  const popupScript =
+    error === 'access_denied'
+      ? authorizationErrorPopupScript({ error, error_description })
+      : '';
+
+  return new Response(
+    `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Authorization was not completed</title>
+  </head>
+  <body>
+    <main>
+      <h1>Authorization was not completed</h1>
+      <p>${escapeHtml(message)}</p>
+      <p>${escapeHtml(detail)}</p>
+    </main>
+    ${popupScript}
+  </body>
+</html>`,
+    {
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+      },
+      status: error === 'access_denied' ? 403 : 400,
+    },
+  );
+}
+
+function authorizationErrorPopupScript({
+  error,
+  error_description,
+}: AuthorizationErrorResponse): string {
+  return `<script>
+(() => {
+  if (!window.opener || window.opener.closed) return;
+  window.opener.postMessage(${escapeScriptJson({
+    type: 'mondo-auth:authorization-error',
+    error,
+    error_description,
+  })}, window.location.origin);
+  window.close();
+})();
+</script>`;
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(
+    /[&<>"']/g,
+    (char) =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      })[char] as string,
+  );
+}
+
+function escapeScriptJson(value: unknown): string {
+  return JSON.stringify(value).replace(
+    /[<>&]/g,
+    (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`,
+  );
 }
