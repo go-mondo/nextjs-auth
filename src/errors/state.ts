@@ -14,6 +14,22 @@ export class MissingStateParamError extends Error {
 }
 
 /**
+ * Error used when the callback response state does not match the login
+ * transaction.
+ */
+export class MismatchedStateParamError extends Error {
+  static message = 'State parameter mismatch in Authorization Response.';
+  status = 400;
+  statusCode = 400;
+
+  constructor() {
+    /* c8 ignore next */
+    super(MismatchedStateParamError.message);
+    Object.setPrototypeOf(this, MismatchedStateParamError.prototype);
+  }
+}
+
+/**
  * Error used when transaction state exists but cannot be parsed.
  */
 export class MalformedStateCookieError extends Error {

@@ -168,9 +168,42 @@ const Schema = z
         accessToken: RelativePathSchema.default('/auth/access-token').describe(
           'Route that returns or refreshes the current access token.',
         ),
+        authorizationError: RelativePathSchema.optional().describe(
+          'Optional application route shown after a verified authorization error, such as denied consent.',
+        ),
+        loginError: RelativePathSchema.optional().describe(
+          'Optional application route shown after the login route fails before redirecting to the identity provider.',
+        ),
+        callbackError: RelativePathSchema.optional().describe(
+          'Optional application route shown after the callback route fails outside a verified provider authorization error.',
+        ),
         postLogoutRedirect: RelativePathSchema.default('/').describe(
           'Application path to redirect to after logout.',
         ),
+      })
+      .superRefine((routes, ctx) => {
+        const authRoutes = new Set([
+          routes.login,
+          routes.callback,
+          routes.logout,
+          routes.session,
+          routes.accessToken,
+        ]);
+
+        for (const routeName of [
+          'authorizationError',
+          'loginError',
+          'callbackError',
+        ] as const) {
+          const route = routes[routeName];
+          if (route && authRoutes.has(route)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: 'Must not match a built-in auth route.',
+              path: [routeName],
+            });
+          }
+        }
       })
       .describe('Application routes mounted by the auth client.'),
     transaction: z
