@@ -18,6 +18,12 @@ const validConfigWithoutBaseURL = {
 };
 
 const envNames = [
+  'MONDO_SECRET',
+  'MONDO_ISSUER_BASE_URL',
+  'MONDO_CLIENT_ID',
+  'MONDO_CLIENT_SECRET',
+  'MONDO_AUDIENCE',
+  'MONDO_SCOPE',
   'APP_BASE_URL',
   'NEXT_PUBLIC_APP_BASE_URL',
   'NEXT_PUBLIC_LOGIN_ROUTE',
@@ -28,6 +34,18 @@ const envNames = [
   'SESSION_ROUTE',
   'ACCESS_TOKEN_ROUTE',
   'POST_LOGOUT_REDIRECT_ROUTE',
+  'MONDO_SESSION_NAME',
+  'MONDO_SESSION_IDLE_DURATION',
+  'MONDO_SESSION_ABSOLUTE_DURATION',
+  'MONDO_COOKIE_DOMAIN',
+  'MONDO_COOKIE_PATH',
+  'MONDO_COOKIE_SECURE',
+  'MONDO_COOKIE_SAME_SITE',
+  'MONDO_TRANSACTION_COOKIE_NAME',
+  'MONDO_TRANSACTION_COOKIE_DOMAIN',
+  'MONDO_TRANSACTION_COOKIE_PATH',
+  'MONDO_TRANSACTION_COOKIE_SECURE',
+  'MONDO_TRANSACTION_COOKIE_SAME_SITE',
 ] as const;
 const originalEnv = new Map(envNames.map((name) => [name, process.env[name]]));
 
@@ -58,6 +76,8 @@ describe('getConfig', () => {
       session: '/auth/session',
       accessToken: '/auth/access-token',
     });
+    expect(config.session.name).toBe('__Host-Mondo');
+    expect(config.transaction.name).toBe('__Host-Mondo.Verification');
     expect(config.authorization.audience).toBe('https://api.example.com');
   });
 
@@ -168,6 +188,70 @@ describe('getConfig', () => {
         },
       }),
     ).toThrow('- routes.callback: Must not contain "//".');
+  });
+
+  it('rejects domain-scoped __Host session cookies', () => {
+    expect(() =>
+      getConfig({
+        ...validConfig,
+        session: {
+          cookie: {
+            domain: 'example.com',
+          },
+        },
+      }),
+    ).toThrow(
+      '- session.cookie.domain: __Host- cookies must not set a domain.',
+    );
+  });
+
+  it('rejects non-root __Host session cookie paths', () => {
+    expect(() =>
+      getConfig({
+        ...validConfig,
+        session: {
+          cookie: {
+            path: '/auth',
+          },
+        },
+      }),
+    ).toThrow('- session.cookie.path: __Host- cookies must use path "/".');
+  });
+
+  it('rejects insecure prefixed transaction cookies', () => {
+    expect(() =>
+      getConfig({
+        ...validConfig,
+        transaction: {
+          cookie: {
+            secure: false,
+          },
+        },
+      }),
+    ).toThrow(
+      '- transaction.cookie.secure: __Host- and __Secure- cookies must be secure.',
+    );
+  });
+
+  it('allows domain-scoped cookies when the caller opts out of __Host names', () => {
+    const config = getConfig({
+      ...validConfig,
+      session: {
+        name: '__Secure-Mondo',
+        cookie: {
+          domain: 'example.com',
+        },
+      },
+      transaction: {
+        name: '__Secure-Mondo.Verification',
+        cookie: {
+          domain: 'example.com',
+        },
+      },
+    });
+
+    expect(config.session.cookie.domain).toBe('example.com');
+    expect(config.transaction.cookie.domain).toBe('example.com');
   });
 
   it('describes the schema for generated docs and debugging', () => {
