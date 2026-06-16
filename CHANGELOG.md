@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/go-mondo/nextjs-auth/compare/v0.4.0...v0.5.0) (2026-06-16)
+
+
+### Features
+
+* added __Host- prefix to cookies ([e059693](https://github.com/go-mondo/nextjs-auth/commit/e0596937018f649d36a3b0863827abf850980d3c))
+
 ## [Unreleased]
 
 ### ⚠ BREAKING CHANGES
