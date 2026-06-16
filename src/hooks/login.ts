@@ -33,6 +33,12 @@ export class LoginRedirectError extends Error {
 let isRedirectingToLogin = false;
 
 /**
+ * Base URL used only to let the platform URL parser resolve app-relative login
+ * routes. This value must never be exposed in returned redirect URLs.
+ */
+const URL_PARSE_BASE = 'https://nextjs-auth.local';
+
+/**
  * Builds the login URL with a `returnTo` query parameter that encodes the
  * current app path and query string.
  *
@@ -44,13 +50,16 @@ let isRedirectingToLogin = false;
  * helper returns a URL with `returnTo` set to `'/'` and logs a warning when
  * `console.warn` is available, so consumers can decide how to proceed.
  *
+ * Relative login route configuration returns an app-relative URL. Absolute
+ * login route configuration keeps its configured origin intact.
+ *
  * @param options - Optional `returnTo` and `replace` flags.
- * @returns The full login URL as a string.
+ * @returns The login URL as a string.
  */
 export function buildLoginUrl(options: LoginRedirectOptions = {}): string {
   const { returnTo } = options;
   const route = getPublicLoginRoute();
-  const url = new URL(route, 'http://localhost');
+  const url = new URL(route, URL_PARSE_BASE);
 
   if (returnTo !== undefined) {
     url.searchParams.set('returnTo', returnTo);
@@ -68,7 +77,24 @@ export function buildLoginUrl(options: LoginRedirectOptions = {}): string {
     }
   }
 
-  return url.toString();
+  return isAbsoluteUrl(route)
+    ? url.toString()
+    : `${url.pathname}${url.search}${url.hash}`;
+}
+
+/**
+ * Returns whether a configured login route already includes an origin.
+ *
+ * @param value - Login route value from public configuration.
+ * @returns `true` when `value` is an absolute URL.
+ */
+function isAbsoluteUrl(value: string): boolean {
+  try {
+    new URL(value);
+    return true;
+  } catch (_) {
+    return false;
+  }
 }
 
 /**

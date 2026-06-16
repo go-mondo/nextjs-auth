@@ -18,20 +18,24 @@ describe('buildLoginUrl', () => {
 
   it('returns the default login route', () => {
     const url = buildLoginUrl();
-    expect(url).toEqual('http://localhost/auth/login?returnTo=%2F');
+    expect(url).toEqual('/auth/login?returnTo=%2F');
   });
 
   it('uses NEXT_PUBLIC_LOGIN_ROUTE when set', () => {
     process.env.NEXT_PUBLIC_LOGIN_ROUTE = '/custom/login';
     const url = buildLoginUrl();
-    expect(url).toEqual('http://localhost/custom/login?returnTo=%2F');
+    expect(url).toEqual('/custom/login?returnTo=%2F');
+  });
+
+  it('preserves absolute NEXT_PUBLIC_LOGIN_ROUTE when set', () => {
+    process.env.NEXT_PUBLIC_LOGIN_ROUTE = 'https://auth.example.com/login';
+    const url = buildLoginUrl();
+    expect(url).toEqual('https://auth.example.com/login?returnTo=%2F');
   });
 
   it('includes explicit returnTo', () => {
     const url = buildLoginUrl({ returnTo: '/dashboard?tab=reports' });
-    expect(url).toEqual(
-      'http://localhost/auth/login?returnTo=%2Fdashboard%3Ftab%3Dreports',
-    );
+    expect(url).toEqual('/auth/login?returnTo=%2Fdashboard%3Ftab%3Dreports');
   });
 
   it('encodes returnTo with special characters', () => {
@@ -40,7 +44,7 @@ describe('buildLoginUrl', () => {
     });
     // URLSearchParams encodes spaces as `+` which is valid per RFC 3986.
     expect(url).toEqual(
-      'http://localhost/auth/login?returnTo=%2Fpath+with+spaces%3Ffoo%3Dbar%26baz%3Dqux',
+      '/auth/login?returnTo=%2Fpath+with+spaces%3Ffoo%3Dbar%26baz%3Dqux',
     );
   });
 
@@ -53,9 +57,7 @@ describe('buildLoginUrl', () => {
     });
 
     const url = buildLoginUrl();
-    expect(url).toEqual(
-      'http://localhost/auth/login?returnTo=%2Fapp%2Fprofile%3Fid%3D42',
-    );
+    expect(url).toEqual('/auth/login?returnTo=%2Fapp%2Fprofile%3Fid%3D42');
 
     vi.unstubAllGlobals();
   });
@@ -69,7 +71,7 @@ describe('buildLoginUrl', () => {
     });
 
     const url = buildLoginUrl({ returnTo: '/explicit' });
-    expect(url).toEqual('http://localhost/auth/login?returnTo=%2Fexplicit');
+    expect(url).toEqual('/auth/login?returnTo=%2Fexplicit');
 
     vi.unstubAllGlobals();
   });
@@ -103,7 +105,7 @@ describe('redirectToLogin', () => {
 
   it('calls window.location.assign by default', async () => {
     const { redirectToLogin } = await import('./login');
-    const url = 'http://localhost/auth/login?returnTo=%2Fcurrent';
+    const url = '/auth/login?returnTo=%2Fcurrent';
     const assign = vi.fn();
     const addEventListener = vi.fn();
     const location = {
@@ -139,9 +141,7 @@ describe('redirectToLogin', () => {
 
     await redirectToLogin({ replace: true });
 
-    expect(replace).toHaveBeenCalledWith(
-      'http://localhost/auth/login?returnTo=%2Fcurrent',
-    );
+    expect(replace).toHaveBeenCalledWith('/auth/login?returnTo=%2Fcurrent');
   });
 
   it('uses explicit returnTo', async () => {
@@ -162,7 +162,7 @@ describe('redirectToLogin', () => {
     await redirectToLogin({ returnTo: '/custom-redirect' });
 
     expect(assign).toHaveBeenCalledWith(
-      'http://localhost/auth/login?returnTo=%2Fcustom-redirect',
+      '/auth/login?returnTo=%2Fcustom-redirect',
     );
   });
 });
