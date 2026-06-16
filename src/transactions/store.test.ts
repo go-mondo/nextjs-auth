@@ -33,7 +33,7 @@ describe('TransactionStore', () => {
     expect(mocks.getIronSession).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({
-        cookieName: 'Mondo.Verification',
+        cookieName: '__Host-Mondo.Verification',
         cookieOptions: expect.objectContaining({ httpOnly: true }),
       }),
     );

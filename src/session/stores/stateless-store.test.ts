@@ -120,19 +120,19 @@ describe('NewStatelessSessionStore', () => {
       1,
       expect.any(Object),
       expect.objectContaining({
-        cookieName: 'Mondo.Session',
+        cookieName: '__Host-Mondo.Session',
         cookieOptions: expect.objectContaining({ httpOnly: true, path: '/' }),
       }),
     );
     expect(mocks.getIronSession).toHaveBeenNthCalledWith(
       2,
       expect.any(Object),
-      expect.objectContaining({ cookieName: 'Mondo.Authorization' }),
+      expect.objectContaining({ cookieName: '__Host-Mondo.Authorization' }),
     );
     expect(mocks.getIronSession).toHaveBeenNthCalledWith(
       3,
       expect.any(Object),
-      expect.objectContaining({ cookieName: 'Mondo.Authentication' }),
+      expect.objectContaining({ cookieName: '__Host-Mondo.Authentication' }),
     );
   });
 });

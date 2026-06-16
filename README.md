@@ -454,12 +454,22 @@ throw as SDK errors.
 
 The session is split into sealed `iron-session` cookies:
 
-- `Mondo.Session`: user claims and session timestamps.
-- `Mondo.Authorization`: access token, expiry, scopes, and refresh token.
-- `Mondo.Authentication`: raw ID token.
+- `__Host-Mondo.Session`: user claims and session timestamps.
+- `__Host-Mondo.Authorization`: access token, expiry, scopes, and refresh token.
+- `__Host-Mondo.Authentication`: raw ID token.
 
 This keeps the session stateless and tamper-proof while avoiding a server-side
-session database. Cookies are HTTP-only by default.
+session database. Login transaction verification is stored in
+`__Host-Mondo.Verification`.
+
+Cookies are HTTP-only by default. The default names use the `__Host-` prefix,
+which requires secure, host-only cookies with `Path=/`. If you need domain-wide
+cookies for subdomains, configure non-`__Host-` names such as `__Secure-Mondo`
+and set the cookie domain explicitly.
+
+For local development, `http://localhost` is normally handled specially by
+browsers for secure cookies. Custom local hostnames served over plain HTTP may
+need HTTPS or explicit non-prefixed development cookie names.
 
 ## Session Expiration
 

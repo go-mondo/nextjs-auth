@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+const HOST_COOKIE_PREFIX = '__Host-';
+const SECURE_COOKIE_PREFIX = '__Secure-';
+
 const RelativePathSchema = z
   .string()
   .startsWith('/', 'Must start with "/".')
@@ -20,12 +23,55 @@ const AuthorizationParamValueSchema = z.union([
   z.boolean(),
 ]);
 
+type CookiePrefixOptions = {
+  domain?: string;
+  path?: string;
+  secure?: boolean;
+};
+
+function validateCookiePrefix(
+  name: string,
+  cookie: CookiePrefixOptions,
+  context: z.RefinementCtx,
+) {
+  if (name.startsWith(HOST_COOKIE_PREFIX)) {
+    if (cookie.domain !== undefined) {
+      context.addIssue({
+        code: 'custom',
+        path: ['cookie', 'domain'],
+        message: `${HOST_COOKIE_PREFIX} cookies must not set a domain.`,
+      });
+    }
+
+    if (cookie.path !== '/') {
+      context.addIssue({
+        code: 'custom',
+        path: ['cookie', 'path'],
+        message: `${HOST_COOKIE_PREFIX} cookies must use path "/".`,
+      });
+    }
+  }
+
+  if (
+    name.startsWith(HOST_COOKIE_PREFIX) ||
+    name.startsWith(SECURE_COOKIE_PREFIX)
+  ) {
+    if (cookie.secure !== true) {
+      context.addIssue({
+        code: 'custom',
+        path: ['cookie', 'secure'],
+        message: `${HOST_COOKIE_PREFIX} and ${SECURE_COOKIE_PREFIX} cookies must be secure.`,
+      });
+    }
+  }
+}
+
 const SessionSchema = z
   .object({
     name: z
       .string()
       .optional()
-      .default('Mondo')
+      .default('__Host-Mondo')
       .describe('Cookie name prefix used for the session cookie set.'),
     idleDuration: z
       .union([z.number().positive(), z.literal(false)])
@@ -70,6 +116,9 @@ const SessionSchema = z
       session.idleDuration !== false || session.absoluteDuration !== false,
     'At least one of idleDuration or absoluteDuration must be enabled.',
   )
+  .superRefine((session, context) => {
+    validateCookiePrefix(session.name, session.cookie, context);
+  })
   .describe('Application session storage and expiration settings.');
 
 const Schema = z
@@ -210,7 +259,7 @@ const Schema = z
       .object({
         name: z
           .string()
-          .default('Mondo.Verification')
+          .default('__Host-Mondo.Verification')
           .describe(
             'Cookie name used to store login transaction verification.',
           ),
@@ -223,6 +272,7 @@ const Schema = z
             secure: z
               .boolean()
               .optional()
+              .default(true)
               .describe('Whether transaction cookies require HTTPS.'),
             sameSite: z
               .enum(['lax', 'strict', 'none'])
@@ -233,6 +283,9 @@ const Schema = z
               .describe('Path scope for transaction cookies.'),
           })
           .describe('Cookie options for temporary login transaction state.'),
+      })
+      .superRefine((transaction, context) => {
+        validateCookiePrefix(transaction.name, transaction.cookie, context);
       })
       .describe('Short-lived state used to verify authorization callbacks.'),
   })

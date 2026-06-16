@@ -41,12 +41,12 @@ import { bool, num } from './utils';
  * - `MONDO_SESSION_IDLE_DURATION`: See {@link SessionConfig.idleDuration}.
  * - `MONDO_SESSION_ABSOLUTE_DURATION`: See
  *   {@link SessionConfig.absoluteDuration}.
- * - `MONDO_SESSION_COOKIE_DOMAIN`: See {@link CookieConfig.domain}.
- * - `MONDO_SESSION_COOKIE_PATH`: See {@link CookieConfig.path}.
- * - `MONDO_SESSION_COOKIE_SECURE`: See {@link CookieConfig.secure}.
- * - `MONDO_SESSION_COOKIE_SAME_SITE`: See {@link CookieConfig.sameSite}.
+ * - `MONDO_COOKIE_DOMAIN`: See {@link CookieConfig.domain}.
+ * - `MONDO_COOKIE_PATH`: See {@link CookieConfig.path}.
+ * - `MONDO_COOKIE_SECURE`: See {@link CookieConfig.secure}.
+ * - `MONDO_COOKIE_SAME_SITE`: See {@link CookieConfig.sameSite}.
  *
- * - `MONDO_TRANSACTION_NAME` See {@link TransactionConfig.name}.
+ * - `MONDO_TRANSACTION_COOKIE_NAME` See {@link TransactionConfig.name}.
  * - `MONDO_TRANSACTION_COOKIE_DOMAIN` See {@link CookieConfig.domain}.
  * - `MONDO_TRANSACTION_COOKIE_PATH` See {@link CookieConfig.path}.
  * - `MONDO_TRANSACTION_COOKIE_SECURE` See {@link CookieConfig.secure}.
