@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildLoginUrl, redirectToLogin } from './login';
+import { buildLoginUrl } from './login';
 
 describe('buildLoginUrl', () => {
   const originalEnv = process.env.NEXT_PUBLIC_LOGIN_ROUTE;
