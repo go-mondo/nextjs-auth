@@ -33,6 +33,9 @@ const envNames = [
   'LOGOUT_ROUTE',
   'SESSION_ROUTE',
   'ACCESS_TOKEN_ROUTE',
+  'AUTHORIZATION_ERROR_ROUTE',
+  'LOGIN_ERROR_ROUTE',
+  'CALLBACK_ERROR_ROUTE',
   'POST_LOGOUT_REDIRECT_ROUTE',
   'MONDO_SESSION_NAME',
   'MONDO_SESSION_IDLE_DURATION',
@@ -132,6 +135,9 @@ describe('getConfig', () => {
     process.env.LOGOUT_ROUTE = '/api/logout';
     process.env.SESSION_ROUTE = '/api/session/server';
     process.env.ACCESS_TOKEN_ROUTE = '/api/access-token/server';
+    process.env.AUTHORIZATION_ERROR_ROUTE = '/auth/problem';
+    process.env.LOGIN_ERROR_ROUTE = '/auth/login-error';
+    process.env.CALLBACK_ERROR_ROUTE = '/auth/callback-error';
     process.env.POST_LOGOUT_REDIRECT_ROUTE = '/signed-out';
 
     const config = getConfig(validConfig);
@@ -142,6 +148,9 @@ describe('getConfig', () => {
       logout: '/api/logout',
       session: '/api/session/server',
       accessToken: '/api/access-token/server',
+      authorizationError: '/auth/problem',
+      loginError: '/auth/login-error',
+      callbackError: '/auth/callback-error',
       postLogoutRedirect: '/signed-out',
     });
   });
@@ -252,6 +261,21 @@ describe('getConfig', () => {
 
     expect(config.session.cookie.domain).toBe('example.com');
     expect(config.transaction.cookie.domain).toBe('example.com');
+  });
+
+  it('rejects error routes that match built-in auth routes', () => {
+    expect(() =>
+      getConfig({
+        ...validConfig,
+        routes: {
+          authorizationError: '/auth/callback',
+          loginError: '/auth/login',
+          callbackError: '/auth/access-token',
+        },
+      }),
+    ).toThrow(
+      '- routes.authorizationError: Must not match a built-in auth route.',
+    );
   });
 
   it('describes the schema for generated docs and debugging', () => {

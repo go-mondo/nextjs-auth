@@ -15,6 +15,7 @@ import {
 } from '../oauth/types';
 import { discoverOIDC } from '../oauth/oidc';
 import { getAuthorizationRedirectURL, toSafeRedirect } from '../http/url';
+import { redirectToErrorRoute } from './error-route';
 
 type AuthorizationParams = OverrideAuthorizationParams;
 
@@ -64,6 +65,14 @@ export const loginHandlerFactory =
         url.origin,
       );
     } catch (e) {
+      if (instance.config.routes.loginError) {
+        return redirectToErrorRoute(
+          instance.config,
+          instance.config.routes.loginError,
+          'login_error',
+        );
+      }
+
       throw new LoginHandlerError(e as HandlerErrorCause);
     }
   };

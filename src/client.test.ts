@@ -60,6 +60,32 @@ describe('MondoAuthClient', () => {
     expect(mocks.sessionStoreFactory).not.toHaveBeenCalled();
   });
 
+  it('lets configured error routes pass through proxy', async () => {
+    const auth = createAuth({
+      secret: testSecret,
+      issuerBaseURL: 'https://id.example.com',
+      baseURL: 'https://app.example.com',
+      clientId: 'client-id',
+      clientSecret: 'client-secret',
+      routes: {
+        authorizationError: '/auth/denied',
+        loginError: '/auth/login-error',
+        callbackError: '/auth/callback-error',
+      },
+    });
+
+    await expect(
+      auth.proxy(new Request('https://app.example.com/auth/denied')),
+    ).resolves.toBeUndefined();
+    await expect(
+      auth.proxy(new Request('https://app.example.com/auth/login-error')),
+    ).resolves.toBeUndefined();
+    await expect(
+      auth.proxy(new Request('https://app.example.com/auth/callback-error')),
+    ).resolves.toBeUndefined();
+    expect(mocks.sessionStoreFactory).not.toHaveBeenCalled();
+  });
+
   it('redirects unauthenticated proxy requests to login', async () => {
     const auth = createConfiguredAuth();
     mockStore(undefined);

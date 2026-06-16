@@ -13,6 +13,20 @@
   domain-scoped cookies or insecure plain-HTTP development hostnames must
   configure non-`__Host-` cookie names for those environments.
 
+## [0.4.0](https://github.com/go-mondo/nextjs-auth/compare/v0.3.0...v0.4.0) (2026-06-15)
+
+
+### Features
+
+* handle cancel consent callback ([09d059c](https://github.com/go-mondo/nextjs-auth/commit/09d059c7be77c1bc5b391de008abc70c75c3af70)), closes [#10](https://github.com/go-mondo/nextjs-auth/issues/10)
+* handle cancel consent callback ([8bb4f64](https://github.com/go-mondo/nextjs-auth/commit/8bb4f644ad634b6ad613b13438e76372ee083c9a))
+* introducing error routes for branded messages ([4603c7b](https://github.com/go-mondo/nextjs-auth/commit/4603c7bbcf826413fd8b5dcc52864754f5c767f3))
+
+
+### Bug Fixes
+
+* custom route handling ([ffd2632](https://github.com/go-mondo/nextjs-auth/commit/ffd26323cd6b46c4ab751e85b4f199a276a2161f))
+
 ## [0.3.0](https://github.com/go-mondo/nextjs-auth/compare/v0.2.1...v0.3.0) (2026-05-20)
 
 

@@ -31,6 +31,9 @@ import { bool, num } from './utils';
  * - `LOGOUT_ROUTE`: See {@link Config.routes}.
  * - `SESSION_ROUTE`: See {@link Config.routes}.
  * - `ACCESS_TOKEN_ROUTE`: See {@link Config.routes}.
+ * - `AUTHORIZATION_ERROR_ROUTE`: See {@link Config.routes}.
+ * - `LOGIN_ERROR_ROUTE`: See {@link Config.routes}.
+ * - `CALLBACK_ERROR_ROUTE`: See {@link Config.routes}.
  * - `POST_LOGOUT_REDIRECT_ROUTE`: See {@link Config.routes}.
  * - `MONDO_AUDIENCE`: See {@link Config.authorization}.
  * - `MONDO_SCOPE`: See {@link Config.authorization}.
@@ -69,6 +72,9 @@ export const getConfig = (params: PartialConfig = {}): Config => {
   const ACCESS_TOKEN_ROUTE = process.env.ACCESS_TOKEN_ROUTE;
   const NEXT_PUBLIC_ACCESS_TOKEN_ROUTE =
     process.env.NEXT_PUBLIC_ACCESS_TOKEN_ROUTE;
+  const AUTHORIZATION_ERROR_ROUTE = process.env.AUTHORIZATION_ERROR_ROUTE;
+  const LOGIN_ERROR_ROUTE = process.env.LOGIN_ERROR_ROUTE;
+  const CALLBACK_ERROR_ROUTE = process.env.CALLBACK_ERROR_ROUTE;
   const POST_LOGOUT_REDIRECT_ROUTE = process.env.POST_LOGOUT_REDIRECT_ROUTE;
 
   const MONDO_SESSION_NAME = process.env.MONDO_SESSION_NAME;
@@ -143,6 +149,10 @@ export const getConfig = (params: PartialConfig = {}): Config => {
         ACCESS_TOKEN_ROUTE ||
         NEXT_PUBLIC_ACCESS_TOKEN_ROUTE ||
         DEFAULT_ROUTES.accessToken,
+      authorizationError:
+        params.routes?.authorizationError || AUTHORIZATION_ERROR_ROUTE,
+      loginError: params.routes?.loginError || LOGIN_ERROR_ROUTE,
+      callbackError: params.routes?.callbackError || CALLBACK_ERROR_ROUTE,
       postLogoutRedirect:
         params.routes?.postLogoutRedirect ||
         POST_LOGOUT_REDIRECT_ROUTE ||

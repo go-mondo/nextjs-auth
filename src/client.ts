@@ -249,7 +249,12 @@ function isAuthRoute(pathname: string, routes: AuthRoutes): boolean {
     routes.logout,
     routes.session,
     routes.accessToken,
-  ].includes(pathname);
+    routes.authorizationError,
+    routes.loginError,
+    routes.callbackError,
+  ]
+    .filter((route): route is string => Boolean(route))
+    .includes(pathname);
 }
 
 function isPublicPath(
