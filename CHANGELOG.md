@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/go-mondo/nextjs-auth/compare/v0.5.0...v0.5.1) (2026-06-16)
+
+
+### Bug Fixes
+
+* issue building login url ([370099e](https://github.com/go-mondo/nextjs-auth/commit/370099e1e13fc5c35193f237da638d585fc2e6d8))
+* issue w/ building login redirects ([6cb68c5](https://github.com/go-mondo/nextjs-auth/commit/6cb68c5f3581cc4208fd748a851b6d9e2014af1e))
+
 ## [0.5.0](https://github.com/go-mondo/nextjs-auth/compare/v0.4.0...v0.5.0) (2026-06-16)
 
 
