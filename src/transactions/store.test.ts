@@ -62,6 +62,43 @@ describe('TransactionStore', () => {
     expect(cookie.save).toHaveBeenCalledTimes(1);
   });
 
+  it('clears session cookies before saving verification data', async () => {
+    const cookies = [
+      createCookie(),
+      createCookie(),
+      createCookie(),
+      createCookie(),
+    ];
+    mocks.getIronSession
+      .mockResolvedValueOnce(cookies[0])
+      .mockResolvedValueOnce(cookies[1])
+      .mockResolvedValueOnce(cookies[2])
+      .mockResolvedValueOnce(cookies[3]);
+    const store = transactionStoreFactory(
+      createTestConfig(),
+      createCookieStore(),
+    );
+
+    await store.save({
+      code_verifier: 'verifier',
+      nonce: 'nonce',
+      state: 'state',
+    });
+
+    expect(cookies[0]!.destroy).toHaveBeenCalledTimes(1);
+    expect(cookies[1]!.destroy).toHaveBeenCalledTimes(1);
+    expect(cookies[2]!.destroy).toHaveBeenCalledTimes(1);
+    expect(cookies[3]).toMatchObject({
+      code_verifier: 'verifier',
+      nonce: 'nonce',
+      state: 'state',
+    });
+    expect(cookies[3]!.save).toHaveBeenCalledTimes(1);
+    expect(cookies[0]!.destroy.mock.invocationCallOrder[0]).toBeLessThan(
+      cookies[3]!.save.mock.invocationCallOrder[0]!,
+    );
+  });
+
   it('reads and destroys complete verification data', async () => {
     const cookie = createCookie({
       code_verifier: 'verifier',
