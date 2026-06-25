@@ -1,6 +1,6 @@
 {
   "name": "@go-mondo/nextjs-auth",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Next.js authentication helpers for Mondo Identity.",
   "license": "MIT",
   "type": "module",
