@@ -4,6 +4,8 @@ import type { Config } from '../config/types';
 import { getSecrets, type Secrets } from '../crypto/secrets';
 import type { CookieStore } from '../http/cookies';
 import type { AuthorizationCodeParams } from '../oauth/types';
+import { NewStatelessSessionStore } from '../session/stores/stateless-store';
+import type { Claims } from '../session/types';
 
 export type AuthVerification = Pick<
   AuthorizationCodeParams,
@@ -26,6 +28,13 @@ export function transactionStoreFactory(
   config: Config,
   cookieStore: CookieStore,
 ): TransactionStore {
+  const sessionStore = new NewStatelessSessionStore<Claims>(
+    config,
+    undefined,
+    undefined,
+    () => cookieStore,
+  );
+
   return new TransactionStore(
     getSecrets(config),
     cookieStore,
@@ -34,6 +43,7 @@ export function transactionStoreFactory(
       ...config.transaction.cookie,
       httpOnly: true,
     },
+    () => sessionStore.delete(),
   );
 }
 
@@ -49,12 +59,15 @@ export class TransactionStore {
     private readonly cookieStore: CookieStore,
     private readonly cookieName: string,
     private readonly cookieOptions: SerializeOptions,
+    private readonly clearSession: () => Promise<void> = async () => {},
   ) {}
 
   /**
    * Saves transaction verification data in a sealed cookie.
    */
   async save(value: AuthVerification): Promise<void> {
+    await this.clearSession();
+
     const cookie = await this.getCookie();
 
     cookie.code_verifier = value.code_verifier;
