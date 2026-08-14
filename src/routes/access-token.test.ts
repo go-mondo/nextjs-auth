@@ -114,6 +114,7 @@ describe('accessTokenHandlerFactory', () => {
 
   it.each([
     [AccessTokenErrorCode.MISSING_SESSION, 401],
+    [AccessTokenErrorCode.INVALID_REFRESH_TOKEN, 401],
     [AccessTokenErrorCode.INSUFFICIENT_SCOPE, 403],
     [AccessTokenErrorCode.FAILED_REFRESH_GRANT, 502],
   ])('maps %s to %i', async (code, status) => {

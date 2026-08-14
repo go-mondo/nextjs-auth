@@ -19,6 +19,9 @@ export enum AccessTokenErrorCode {
   /** Access token does not include the requested scopes. */
   INSUFFICIENT_SCOPE = 'ERR_INSUFFICIENT_SCOPE',
 
+  /** The authorization server rejected the stored refresh token. */
+  INVALID_REFRESH_TOKEN = 'ERR_INVALID_REFRESH_TOKEN',
+
   /** Refresh token grant failed or returned an invalid response. */
   FAILED_REFRESH_GRANT = 'ERR_FAILED_REFRESH_GRANT',
 }

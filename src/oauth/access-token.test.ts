@@ -4,11 +4,23 @@ import { Session } from '../session/model';
 import { epoch } from '../session/utils';
 import { createTestConfig } from '../test-utils';
 
-const mocks = vi.hoisted(() => ({
-  discoverOIDC: vi.fn(),
-  refreshTokenGrant: vi.fn(),
-  sessionStoreFactory: vi.fn(),
-}));
+const mocks = vi.hoisted(() => {
+  class ResponseBodyError extends Error {
+    public readonly error: string;
+
+    constructor(error: string) {
+      super(error);
+      this.error = error;
+    }
+  }
+
+  return {
+    discoverOIDC: vi.fn(),
+    refreshTokenGrant: vi.fn(),
+    ResponseBodyError,
+    sessionStoreFactory: vi.fn(),
+  };
+});
 
 vi.mock('./oidc', () => ({
   discoverOIDC: mocks.discoverOIDC,
@@ -20,6 +32,7 @@ vi.mock('../session/stores/stateless-store', () => ({
 
 vi.mock('openid-client', () => ({
   refreshTokenGrant: mocks.refreshTokenGrant,
+  ResponseBodyError: mocks.ResponseBodyError,
 }));
 
 const { getAccessTokenFactory } = await import('./access-token');
@@ -157,6 +170,25 @@ describe('getAccessTokenFactory', () => {
 
     await expect(getToken()).rejects.toMatchObject({
       code: AccessTokenErrorCode.FAILED_REFRESH_GRANT,
+    });
+  });
+
+  it('identifies refresh tokens rejected with invalid_grant', async () => {
+    mockStore(
+      createSession({
+        authorization: {
+          accessToken: 'expired-token',
+          expiresAt: epoch() - 1,
+          refreshToken: 'refresh-token',
+        },
+      }),
+    );
+    mocks.refreshTokenGrant.mockRejectedValue(
+      new mocks.ResponseBodyError('invalid_grant'),
+    );
+
+    await expect(getToken()).rejects.toMatchObject({
+      code: AccessTokenErrorCode.INVALID_REFRESH_TOKEN,
     });
   });
 });

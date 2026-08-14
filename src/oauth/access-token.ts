@@ -140,6 +140,17 @@ async function refreshAccessToken<UserClaims extends Claims>(
       throw error;
     }
 
+    if (
+      error instanceof oidc.ResponseBodyError &&
+      error.error === 'invalid_grant'
+    ) {
+      throw new AccessTokenError(
+        AccessTokenErrorCode.INVALID_REFRESH_TOKEN,
+        'The refresh token is invalid, expired, or revoked.',
+        error,
+      );
+    }
+
     throw new AccessTokenError(
       AccessTokenErrorCode.FAILED_REFRESH_GRANT,
       'The refresh grant failed.',
