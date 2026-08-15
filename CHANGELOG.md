@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/go-mondo/nextjs-auth/compare/v0.5.2...v0.6.0) (2026-08-15)
+
+
+### Features
+
+* introduced new refresh token error code and handling ([619be8f](https://github.com/go-mondo/nextjs-auth/commit/619be8f0432dabe5e0d5c4982012e5263f889a80))
+* introduced new refresh token error code and handling ([d26ae64](https://github.com/go-mondo/nextjs-auth/commit/d26ae641542653a065d17f28c412983477e5c283))
+
 ## [0.5.2](https://github.com/go-mondo/nextjs-auth/compare/v0.5.1...v0.5.2) (2026-06-25)
 
 
