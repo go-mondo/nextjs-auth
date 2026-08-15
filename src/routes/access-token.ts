@@ -129,6 +129,7 @@ function getStatusCode(code: AccessTokenErrorCode): number {
     case AccessTokenErrorCode.MISSING_ACCESS_TOKEN:
     case AccessTokenErrorCode.MISSING_REFRESH_TOKEN:
     case AccessTokenErrorCode.EXPIRED_ACCESS_TOKEN:
+    case AccessTokenErrorCode.INVALID_REFRESH_TOKEN:
       return 401;
     case AccessTokenErrorCode.INSUFFICIENT_SCOPE:
       return 403;
