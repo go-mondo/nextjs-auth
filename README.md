@@ -304,7 +304,7 @@ export function ReportsClient() {
 }
 ```
 
-When `scopes`, `refresh`, or `refreshBeforeExpiresIn` are provided, the hook
+When `scopes`, `refresh`, `refreshBeforeExpiresIn`, or `resource` are provided, the hook
 POSTs those options to `/auth/access-token`. The authorization server validates
 whether requested scopes are allowed for the stored refresh token.
 
@@ -333,6 +333,70 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit) {
   });
 }
 ```
+
+### Tokens for a resource
+
+To get an access token for a specific resource, pass an
+[RFC 8707](https://www.rfc-editor.org/rfc/rfc8707) `resource`. The package
+always uses the stored refresh token to get a new token for that resource and
+returns it without storing it. The session keeps the token it signed in with,
+and a rotated refresh token is the only change persisted.
+
+Because a rotated refresh token is written to the session cookies, request
+resource tokens where cookies can be set, such as a route handler, server
+action, or the access-token route. Elsewhere, such as in a Server Component,
+`getAccessToken` throws `ERR_FAILED_SESSION_UPDATE` if the refresh token
+rotates.
+
+```ts
+// src/app/api/workspaces/[tenantId]/route.ts
+import { auth } from '@/lib/auth';
+
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ tenantId: string }> },
+) {
+  const { tenantId } = await params;
+  const { accessToken } = await auth.getAccessToken({
+    resource: `https://api.example.com/workspaces/${tenantId}`,
+  });
+
+  // ...call the API with `authorization: Bearer ${accessToken}`
+}
+```
+
+In the browser, `createAccessTokenProvider` and `useAccessToken` cache one token
+per resource. `clear({ resource })` clears a single resource's token.
+
+Concurrent refreshes that use the same refresh token run one at a time, so a
+rotated refresh token is never reused and rejected. This coordination happens
+within one server instance. If the identity provider rotates refresh tokens
+and the app runs on several instances, avoid requesting tokens for several
+resources at the same time.
+
+```ts
+import { createAccessTokenProvider } from '@go-mondo/nextjs-auth/hooks';
+
+const tokens = createAccessTokenProvider();
+
+export async function getWorkspaceToken(tenantId: string) {
+  const { accessToken } = await tokens.getAccessToken({
+    resource: `https://api.example.com/workspaces/${tenantId}`,
+  });
+
+  return accessToken;
+}
+```
+
+The authorization server decides which resources the session may access.
+`getAccessToken` throws an `AccessTokenError` with code `ERR_INVALID_TARGET`
+when the server refuses a resource. The access-token route then answers `403`
+with `error: "ERR_INVALID_TARGET"`. Signing in again won't help, so don't treat
+it like a `401`. The route answers `400` with `error: "ERR_INVALID_REQUEST"`
+when a `resource` is not an absolute `https:` URL without a fragment or
+whitespace (`http:` is allowed only for `localhost` and `127.0.0.1`). A static
+`resource` passed to the access-token handler is checked the same way and
+throws a `ConfigError` when the handler is created.
 
 When the access-token route returns a non-2xx response, `fetchAccessToken` throws
 a typed `FetchAccessTokenError` that app code can distinguish with `instanceof`:

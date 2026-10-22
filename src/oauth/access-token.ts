@@ -5,6 +5,13 @@ import { sessionStoreFactory } from '../session/stores/stateless-store';
 import type { Claims, SessionAuthorization } from '../session/types';
 import { epoch } from '../session/utils';
 import { discoverOIDC } from './oidc';
+import { queueRefreshGrant } from './refresh-grant-queue';
+
+/**
+ * Seconds a resource token is treated as valid when the identity provider does
+ * not return `expires_in`.
+ */
+const DEFAULT_RESOURCE_TOKEN_LIFETIME = 300;
 
 export type AccessTokenResult = {
   /** Bearer token value returned by the identity provider. */
@@ -18,6 +25,9 @@ export type AccessTokenResult = {
 
   /** Token type returned by the identity provider, usually `Bearer`. */
   type?: string;
+
+  /** RFC 8707 resource the access token was requested for, when one was. */
+  resource?: string;
 };
 
 export type GetAccessTokenOptions = {
@@ -35,6 +45,14 @@ export type GetAccessTokenOptions = {
    * Number of seconds before expiry that should be treated as already expired.
    */
   refreshBeforeExpiresIn?: number;
+
+  /**
+   * RFC 8707 resource indicator to request the access token for.
+   *
+   * A token for a resource is always obtained with a refresh grant and is not
+   * stored in the session; the session keeps the sign-in access token.
+   */
+  resource?: string;
 };
 
 export type GetAccessToken = (
@@ -48,6 +66,9 @@ export type GetAccessToken = (
  * the requested scopes. If it is expired, explicitly refreshed, or missing the
  * requested scopes, the getter uses the stored refresh token and persists the
  * refreshed authorization payload back to the session cookies.
+ *
+ * When a `resource` is requested, the getter always refreshes and returns the
+ * new token without storing it. Only a rotated refresh token is persisted.
  *
  * @param instance - Validated auth client instance.
  */
@@ -79,9 +100,11 @@ export function getAccessTokenFactory<UserClaims extends Claims>(
 
     if (!authorization.refreshToken) {
       throw new AccessTokenError(
-        isExpired(authorization, options)
-          ? AccessTokenErrorCode.EXPIRED_ACCESS_TOKEN
-          : AccessTokenErrorCode.INSUFFICIENT_SCOPE,
+        options.resource !== undefined
+          ? AccessTokenErrorCode.MISSING_REFRESH_TOKEN
+          : isExpired(authorization, options)
+            ? AccessTokenErrorCode.EXPIRED_ACCESS_TOKEN
+            : AccessTokenErrorCode.INSUFFICIENT_SCOPE,
         'The access token cannot be refreshed because the session does not contain a refresh token.',
       );
     }
@@ -95,7 +118,6 @@ async function refreshAccessToken<UserClaims extends Claims>(
   session: Session<UserClaims>,
   options: GetAccessTokenOptions,
 ): Promise<AccessTokenResult> {
-  const oidc = await import('openid-client');
   const authorization = session.authorization;
 
   if (!authorization?.refreshToken) {
@@ -105,36 +127,80 @@ async function refreshAccessToken<UserClaims extends Claims>(
     );
   }
 
+  const { tokens, refreshToken } = await runRefreshGrant(
+    instance,
+    authorization.refreshToken,
+    options,
+  );
+
+  const refreshedAuthorization: SessionAuthorization = {
+    accessToken: tokens.access_token,
+    expiresAt:
+      epoch() +
+      Number(
+        tokens.expires_in ??
+          (options.resource !== undefined
+            ? DEFAULT_RESOURCE_TOKEN_LIFETIME
+            : authorization.expiresAt - epoch()),
+      ),
+    scope:
+      tokens.scope ?? normalizeScopes(options.scopes) ?? authorization.scope,
+    refreshToken,
+    type: tokens.token_type ?? authorization.type,
+  };
+
+  if (options.resource !== undefined) {
+    // Resource tokens are not stored: the single authorization cookie keeps
+    // the sign-in token. Only a rotated refresh token must be persisted.
+    if (refreshToken !== authorization.refreshToken) {
+      await persistAuthorization(instance, session, {
+        ...authorization,
+        refreshToken,
+      });
+    }
+
+    return {
+      ...toAccessTokenResult(refreshedAuthorization),
+      resource: options.resource,
+    };
+  }
+
+  await persistAuthorization(instance, session, refreshedAuthorization);
+
+  return toAccessTokenResult(refreshedAuthorization);
+}
+
+async function runRefreshGrant(
+  instance: MondoInstance,
+  storedRefreshToken: string,
+  options: GetAccessTokenOptions,
+) {
+  const oidc = await loadOpenIdClient();
+
   try {
-    const params = getRefreshParameters(options);
-    const tokens = await oidc.refreshTokenGrant(
-      await discoverOIDC(instance.config),
-      authorization.refreshToken,
-      params,
+    const result = await queueRefreshGrant(
+      instance,
+      storedRefreshToken,
+      async (refreshToken) =>
+        oidc.refreshTokenGrant(
+          await discoverOIDC(instance.config),
+          refreshToken,
+          getRefreshParameters(options),
+        ),
     );
 
-    if (!tokens.access_token) {
+    const accessToken = result.tokens.access_token;
+    if (!accessToken) {
       throw new AccessTokenError(
         AccessTokenErrorCode.FAILED_REFRESH_GRANT,
         'The refresh grant did not return an access token.',
       );
     }
 
-    const refreshedAuthorization: SessionAuthorization = {
-      accessToken: tokens.access_token,
-      expiresAt:
-        epoch() +
-        Number(tokens.expires_in ?? authorization.expiresAt - epoch()),
-      scope:
-        tokens.scope ?? normalizeScopes(options.scopes) ?? authorization.scope,
-      refreshToken: tokens.refresh_token ?? authorization.refreshToken,
-      type: tokens.token_type ?? authorization.type,
+    return {
+      ...result,
+      tokens: { ...result.tokens, access_token: accessToken },
     };
-
-    session.authorization = refreshedAuthorization;
-    await sessionStoreFactory<UserClaims>(instance.config).set(session);
-
-    return toAccessTokenResult(refreshedAuthorization);
   } catch (error) {
     if (error instanceof AccessTokenError) {
       throw error;
@@ -151,9 +217,49 @@ async function refreshAccessToken<UserClaims extends Claims>(
       );
     }
 
+    if (
+      error instanceof oidc.ResponseBodyError &&
+      error.error === 'invalid_target'
+    ) {
+      throw new AccessTokenError(
+        AccessTokenErrorCode.INVALID_TARGET,
+        'The requested resource is invalid or not available to this session.',
+        error,
+      );
+    }
+
     throw new AccessTokenError(
       AccessTokenErrorCode.FAILED_REFRESH_GRANT,
       'The refresh grant failed.',
+      error instanceof Error ? error : undefined,
+    );
+  }
+}
+
+let openIdClient: Promise<typeof import('openid-client')> | undefined;
+
+/**
+ * Loads `openid-client` once and shares the import between concurrent
+ * refreshes.
+ */
+function loadOpenIdClient() {
+  openIdClient ??= import('openid-client');
+  return openIdClient;
+}
+
+async function persistAuthorization<UserClaims extends Claims>(
+  instance: MondoInstance,
+  session: Session<UserClaims>,
+  authorization: SessionAuthorization,
+): Promise<void> {
+  session.authorization = authorization;
+
+  try {
+    await sessionStoreFactory<UserClaims>(instance.config).set(session);
+  } catch (error) {
+    throw new AccessTokenError(
+      AccessTokenErrorCode.FAILED_SESSION_UPDATE,
+      'The refreshed authorization could not be saved to the session. Get access tokens where cookies can be set, such as a route handler or server action.',
       error instanceof Error ? error : undefined,
     );
   }
@@ -164,6 +270,7 @@ function canUseAccessToken(
   options: GetAccessTokenOptions,
 ): boolean {
   return (
+    options.resource === undefined &&
     options.refresh !== true &&
     !isExpired(authorization, options) &&
     hasScopes(authorization.scope, options.scopes)
@@ -195,12 +302,17 @@ function getRefreshParameters(
   options: GetAccessTokenOptions,
 ): URLSearchParams | undefined {
   const scope = normalizeScopes(options.scopes);
-  if (!scope) {
+  if (!scope && options.resource === undefined) {
     return undefined;
   }
 
   const params = new URLSearchParams();
-  params.set('scope', scope);
+  if (scope) {
+    params.set('scope', scope);
+  }
+  if (options.resource !== undefined) {
+    params.set('resource', options.resource);
+  }
   return params;
 }
 

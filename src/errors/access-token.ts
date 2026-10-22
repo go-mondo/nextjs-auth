@@ -4,6 +4,9 @@ import { AuthError } from './auth';
  * Error codes for {@link AccessTokenError}.
  */
 export enum AccessTokenErrorCode {
+  /** The access-token request contained a malformed option. */
+  INVALID_REQUEST = 'ERR_INVALID_REQUEST',
+
   /** No valid session was available. */
   MISSING_SESSION = 'ERR_MISSING_SESSION',
 
@@ -22,8 +25,14 @@ export enum AccessTokenErrorCode {
   /** The authorization server rejected the stored refresh token. */
   INVALID_REFRESH_TOKEN = 'ERR_INVALID_REFRESH_TOKEN',
 
+  /** The authorization server refused the requested resource (`invalid_target`). */
+  INVALID_TARGET = 'ERR_INVALID_TARGET',
+
   /** Refresh token grant failed or returned an invalid response. */
   FAILED_REFRESH_GRANT = 'ERR_FAILED_REFRESH_GRANT',
+
+  /** Refreshed authorization could not be written to the session cookies. */
+  FAILED_SESSION_UPDATE = 'ERR_FAILED_SESSION_UPDATE',
 }
 
 /**
