@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0](https://github.com/go-mondo/nextjs-auth/compare/v0.6.0...v0.7.0) (2026-10-22)
+
+
+### Features
+
+* request access tokens for a resource (RFC 8707) ([ed935d6](https://github.com/go-mondo/nextjs-auth/commit/ed935d60872c16d1dbb7912d198bc7193982f1af))
+* request access tokens for a resource (RFC 8707) ([9edbf7e](https://github.com/go-mondo/nextjs-auth/commit/9edbf7e273bcf9a6eb1e4e96031b0c0f34291829)), closes [#25](https://github.com/go-mondo/nextjs-auth/issues/25)
+
 ## [0.6.0](https://github.com/go-mondo/nextjs-auth/compare/v0.5.2...v0.6.0) (2026-08-15)
 
 
