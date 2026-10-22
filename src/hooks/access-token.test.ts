@@ -107,6 +107,46 @@ describe('fetchAccessToken', () => {
     expect(init.method).toBe('POST');
   });
 
+  it('posts the resource to the access-token route', async () => {
+    mockFetch(tokenResponse('resource-token'));
+
+    await fetchAccessToken({ resource: RESOURCE_A });
+
+    const init = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    expect(init.method).toBe('POST');
+    expect(init.body).toBe(JSON.stringify({ resource: RESOURCE_A }));
+  });
+
+  it('uses different query keys for different resources', () => {
+    useAccessToken({ resource: RESOURCE_A });
+    useAccessToken({ resource: RESOURCE_B });
+
+    const [first, second] = vi
+      .mocked(useQuery)
+      .mock.calls.map(
+        ([options]) => (options as { queryKey: unknown[] }).queryKey,
+      );
+
+    expect(first?.at(-1)).toBe(RESOURCE_A);
+    expect(second?.at(-1)).toBe(RESOURCE_B);
+    expect(first).not.toEqual(second);
+  });
+
+  it('passes the resource to the query function', async () => {
+    mockFetch(tokenResponse('resource-token'));
+
+    useAccessToken({ resource: RESOURCE_A });
+
+    const options = vi.mocked(useQuery).mock.calls[0]?.[0] as {
+      queryFn: () => Promise<unknown>;
+      queryKey: unknown;
+    };
+    await options.queryFn();
+
+    const init = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    expect(init.body).toBe(JSON.stringify({ resource: RESOURCE_A }));
+  });
+
   it('throws a typed FetchAccessTokenError with code, status, and message', async () => {
     mockFetch(
       {
@@ -202,6 +242,7 @@ describe('fetchAccessToken', () => {
       '/api/token',
       'reports:read',
       true,
+      undefined,
       undefined,
     ]);
     expect(options.staleTime).toBe(1000);
@@ -374,7 +415,78 @@ describe('createAccessTokenProvider', () => {
 
     expect(fetch).toHaveBeenCalledTimes(2);
   });
+
+  it('caches tokens for different resources separately', async () => {
+    const provider = createAccessTokenProvider();
+    mockFetch(tokenResponse('token-a'), tokenResponse('token-b'));
+
+    await expect(
+      provider.getAccessToken({ resource: RESOURCE_A }),
+    ).resolves.toMatchObject({ accessToken: 'token-a' });
+    await expect(
+      provider.getAccessToken({ resource: RESOURCE_B }),
+    ).resolves.toMatchObject({ accessToken: 'token-b' });
+    await expect(
+      provider.getAccessToken({ resource: RESOURCE_A }),
+    ).resolves.toMatchObject({ accessToken: 'token-a' });
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('shares in-flight requests per resource', async () => {
+    const provider = createAccessTokenProvider();
+    mockFetch(tokenResponse('token-a'), tokenResponse('token-b'));
+
+    const tokens = await Promise.all([
+      provider.getAccessToken({ resource: RESOURCE_A }),
+      provider.getAccessToken({ resource: RESOURCE_A }),
+      provider.getAccessToken({ resource: RESOURCE_B }),
+    ]);
+
+    expect(tokens.map((token) => token.accessToken)).toEqual([
+      'token-a',
+      'token-a',
+      'token-b',
+    ]);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('clears only the requested resource', async () => {
+    const provider = createAccessTokenProvider();
+    mockFetch(
+      tokenResponse('token-a'),
+      tokenResponse('token-b'),
+      tokenResponse('new-token-a'),
+    );
+
+    await provider.getAccessToken({ resource: RESOURCE_A });
+    await provider.getAccessToken({ resource: RESOURCE_B });
+    provider.clear({ resource: RESOURCE_A });
+
+    await expect(
+      provider.getAccessToken({ resource: RESOURCE_A }),
+    ).resolves.toMatchObject({ accessToken: 'new-token-a' });
+    await expect(
+      provider.getAccessToken({ resource: RESOURCE_B }),
+    ).resolves.toMatchObject({ accessToken: 'token-b' });
+
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
 });
+
+const RESOURCE_A = 'https://api.example.com/workspaces/tenant_a';
+const RESOURCE_B = 'https://api.example.com/workspaces/tenant_b';
+
+function tokenResponse(accessToken: string) {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({
+      accessToken,
+      expiresAt: epoch() + 300,
+    }),
+  };
+}
 
 function mockFetch(
   ...responses: Array<Partial<Response> & { json: () => Promise<any> }>

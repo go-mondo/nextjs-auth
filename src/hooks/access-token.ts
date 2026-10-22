@@ -39,10 +39,12 @@ export type AccessTokenProvider = {
   ) => Promise<AccessTokenResult>;
 
   /**
-   * Clears the cached entry for the provided route and scopes. Clears every
-   * cached entry when no options are provided.
+   * Clears the cached entry for the provided route, scopes, and resource.
+   * Clears every cached entry when no options are provided.
    */
-  clear: (options?: Pick<FetchAccessTokenOptions, 'route' | 'scopes'>) => void;
+  clear: (
+    options?: Pick<FetchAccessTokenOptions, 'resource' | 'route' | 'scopes'>,
+  ) => void;
 
   /**
    * Clears every cached entry.
@@ -60,6 +62,7 @@ export type UseAccessTokenQueryKey = readonly [
   string | undefined,
   boolean | undefined,
   number | undefined,
+  string | undefined,
 ];
 
 /**
@@ -78,7 +81,8 @@ export type UseAccessTokenOptions<
     'queryFn' | 'queryKey'
   > & {
     /**
-     * TanStack Query key. Defaults to route, scopes, refresh, and refresh skew.
+     * TanStack Query key. Defaults to route, scopes, refresh, refresh skew,
+     * and resource.
      */
     queryKey?: TQueryKey;
   };
@@ -87,7 +91,8 @@ export type UseAccessTokenOptions<
  * Fetches a current access token from the mounted access-token route.
  *
  * The server reads the local sealed session and refreshes the token when
- * needed, when `refresh` is true, or when requested scopes are missing.
+ * needed, when `refresh` is true, when requested scopes are missing, or when a
+ * `resource` is requested.
  */
 export async function fetchAccessToken(
   options: FetchAccessTokenOptions = {},
@@ -96,10 +101,16 @@ export async function fetchAccessToken(
     refresh,
     refreshBeforeExpiresIn,
     request,
+    resource,
     route = getPublicAccessTokenRoute(),
     scopes,
   } = options;
-  const body = getRequestBody({ refresh, refreshBeforeExpiresIn, scopes });
+  const body = getRequestBody({
+    refresh,
+    refreshBeforeExpiresIn,
+    resource,
+    scopes,
+  });
   const headers = new Headers(request?.headers);
 
   if (body && !headers.has('content-type')) {
@@ -217,6 +228,7 @@ export function useAccessToken<
     refresh,
     refreshBeforeExpiresIn,
     request,
+    resource,
     route = getPublicAccessTokenRoute(),
     scopes,
     ...queryOptions
@@ -232,12 +244,14 @@ export function useAccessToken<
         normalizeScopes(scopes),
         refresh,
         refreshBeforeExpiresIn,
+        resource,
       ] satisfies UseAccessTokenQueryKey),
     queryFn: () =>
       fetchAccessToken({
         refresh,
         refreshBeforeExpiresIn,
         request,
+        resource,
         route,
         scopes,
       }),
@@ -249,6 +263,7 @@ function getRequestBody(options: GetAccessTokenOptions) {
   if (
     options.refresh === undefined &&
     options.refreshBeforeExpiresIn === undefined &&
+    options.resource === undefined &&
     options.scopes === undefined
   ) {
     return undefined;
@@ -315,11 +330,12 @@ function canUseCachedAccessToken(
 }
 
 function getAccessTokenCacheKey(
-  options: Pick<FetchAccessTokenOptions, 'route' | 'scopes'>,
+  options: Pick<FetchAccessTokenOptions, 'resource' | 'route' | 'scopes'>,
 ) {
   return JSON.stringify([
     options.route ?? getPublicAccessTokenRoute(),
     normalizeScopes(options.scopes),
+    options.resource,
   ]);
 }
 

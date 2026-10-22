@@ -191,7 +191,204 @@ describe('getAccessTokenFactory', () => {
       code: AccessTokenErrorCode.INVALID_REFRESH_TOKEN,
     });
   });
+
+  it('identifies resources rejected with invalid_target', async () => {
+    mockStore(createSession());
+    mocks.refreshTokenGrant.mockRejectedValue(
+      new mocks.ResponseBodyError('invalid_target'),
+    );
+
+    await expect(getToken({ resource: RESOURCE })).rejects.toMatchObject({
+      code: AccessTokenErrorCode.INVALID_TARGET,
+    });
+  });
+
+  it('still reports other refresh errors as failed grants', async () => {
+    mockStore(createSession());
+    mocks.refreshTokenGrant.mockRejectedValue(
+      new mocks.ResponseBodyError('server_error'),
+    );
+
+    await expect(getToken({ resource: RESOURCE })).rejects.toMatchObject({
+      code: AccessTokenErrorCode.FAILED_REFRESH_GRANT,
+    });
+  });
+
+  describe('with a resource', () => {
+    it('refreshes even when the stored token is valid and has the requested scopes', async () => {
+      mockStore(createSession());
+      mocks.refreshTokenGrant.mockResolvedValue({
+        access_token: 'resource-token',
+        expires_in: 600,
+      });
+
+      await expect(
+        getToken({ resource: RESOURCE, scopes: ['email'] }),
+      ).resolves.toMatchObject({ accessToken: 'resource-token' });
+      expect(mocks.refreshTokenGrant).toHaveBeenCalledTimes(1);
+    });
+
+    it('sends the resource and scope to the token endpoint', async () => {
+      mockStore(createSession());
+      mocks.refreshTokenGrant.mockResolvedValue({
+        access_token: 'resource-token',
+      });
+
+      await getToken({ resource: RESOURCE, scopes: ['openid', 'email'] });
+
+      const params = mocks.refreshTokenGrant.mock.calls[0]?.[2];
+      expect(params).toBeInstanceOf(URLSearchParams);
+      expect(params.getAll('resource')).toEqual([RESOURCE]);
+      expect(params.get('scope')).toBe('openid email');
+    });
+
+    it('sends the resource without a scope when none is requested', async () => {
+      mockStore(createSession());
+      mocks.refreshTokenGrant.mockResolvedValue({
+        access_token: 'resource-token',
+      });
+
+      await getToken({ resource: RESOURCE });
+
+      const params = mocks.refreshTokenGrant.mock.calls[0]?.[2];
+      expect(params.get('resource')).toBe(RESOURCE);
+      expect(params.has('scope')).toBe(false);
+    });
+
+    it('returns the new token without storing it in the session', async () => {
+      const session = createSession();
+      const original = { ...session.authorization };
+      const store = mockStore(session);
+      mocks.refreshTokenGrant.mockResolvedValue({
+        access_token: 'resource-token',
+        expires_in: 600,
+        scope: 'openid email',
+        token_type: 'Bearer',
+      });
+
+      await expect(getToken({ resource: RESOURCE })).resolves.toEqual({
+        accessToken: 'resource-token',
+        expiresAt: expect.any(Number),
+        resource: RESOURCE,
+        scope: 'openid email',
+        type: 'Bearer',
+      });
+      expect(session.authorization).toEqual(original);
+      expect(store.set).not.toHaveBeenCalled();
+    });
+
+    it('persists a rotated refresh token and nothing else', async () => {
+      const session = createSession();
+      const original = { ...session.authorization };
+      const store = mockStore(session);
+      mocks.refreshTokenGrant.mockResolvedValue({
+        access_token: 'resource-token',
+        expires_in: 600,
+        refresh_token: 'rotated-refresh-token',
+        scope: 'openid email workspace',
+      });
+
+      await getToken({ resource: RESOURCE });
+
+      expect(store.set).toHaveBeenCalledWith(session);
+      expect(session.authorization).toEqual({
+        ...original,
+        refreshToken: 'rotated-refresh-token',
+      });
+    });
+
+    it('uses a short default lifetime when the server omits expires_in', async () => {
+      mockStore(
+        createSession({
+          authorization: {
+            accessToken: 'expired-sign-in-token',
+            expiresAt: epoch() - 600,
+            refreshToken: 'refresh-token',
+          },
+        }),
+      );
+      mocks.refreshTokenGrant.mockResolvedValue({
+        access_token: 'resource-token',
+      });
+
+      const token = await getToken({ resource: RESOURCE });
+
+      expect(token.expiresAt).toBeGreaterThanOrEqual(epoch() + 299);
+      expect(token.expiresAt).toBeLessThanOrEqual(epoch() + 300);
+    });
+
+    it('queues concurrent refreshes so a rotated refresh token is reused', async () => {
+      const resourceB = 'https://api.example.com/workspaces/tenant_456';
+      const stores = [mockStore(createSession()), mockStore(createSession())];
+      mocks.sessionStoreFactory
+        .mockReturnValueOnce(stores[0])
+        .mockReturnValueOnce(stores[1])
+        .mockReturnValueOnce(stores[0])
+        .mockReturnValueOnce(stores[1]);
+      mocks.refreshTokenGrant
+        .mockResolvedValueOnce({
+          access_token: 'token-a',
+          refresh_token: 'refresh-token-2',
+        })
+        .mockResolvedValueOnce({
+          access_token: 'token-b',
+          refresh_token: 'refresh-token-3',
+        });
+      const getter = getAccessTokenFactory({ config: createTestConfig() });
+
+      const tokens = await Promise.all([
+        getter({ resource: RESOURCE }),
+        getter({ resource: resourceB }),
+      ]);
+
+      expect(tokens.map((token) => token.accessToken)).toEqual([
+        'token-a',
+        'token-b',
+      ]);
+      expect(mocks.refreshTokenGrant.mock.calls.map((call) => call[1])).toEqual(
+        ['refresh-token', 'refresh-token-2'],
+      );
+      expect(stores[1]?.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          authorization: expect.objectContaining({
+            refreshToken: 'refresh-token-3',
+          }),
+        }),
+      );
+    });
+
+    it('reports a failed session update separately from the grant', async () => {
+      const store = mockStore(createSession());
+      store.set.mockRejectedValue(new Error('Cookies are read-only'));
+      mocks.refreshTokenGrant.mockResolvedValue({
+        access_token: 'resource-token',
+        refresh_token: 'rotated-refresh-token',
+      });
+
+      await expect(getToken({ resource: RESOURCE })).rejects.toMatchObject({
+        code: AccessTokenErrorCode.FAILED_SESSION_UPDATE,
+      });
+    });
+
+    it('requires a refresh token', async () => {
+      mockStore(
+        createSession({
+          authorization: {
+            accessToken: 'current-token',
+            expiresAt: epoch() + 3600,
+          },
+        }),
+      );
+
+      await expect(getToken({ resource: RESOURCE })).rejects.toMatchObject({
+        code: AccessTokenErrorCode.MISSING_REFRESH_TOKEN,
+      });
+      expect(mocks.refreshTokenGrant).not.toHaveBeenCalled();
+    });
+  });
 });
+
+const RESOURCE = 'https://api.example.com/workspaces/tenant_123';
 
 function getToken(
   options?: Parameters<ReturnType<typeof getAccessTokenFactory>>[0],
